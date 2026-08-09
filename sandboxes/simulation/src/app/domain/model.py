@@ -213,24 +213,33 @@ class Environment:
         """Build a small user-facing history, not a raw technical event log."""
         self.overdue_payments(now)
         is_manager = viewer_id == "manager-1"
-        viewer_unit = None if is_manager else self.unit_for_resident(viewer_id, now)
+        if is_manager:
+            viewer_units: set[str] | None = None
+        elif self.membership_history:
+            viewer_units = {
+                membership.unit_id
+                for membership in self.membership_history
+                if membership.resident_id == viewer_id
+            }
+        else:
+            viewer_units = {self.unit_for_resident(viewer_id, now)}
         activities: list[ActivityItem] = []
         for event in self.events:
             if event.name == "payment_overdue":
                 payment = self.payments[int(event.payload["payment_index"])]
-                if not is_manager and payment.unit_id != viewer_unit:
+                if not is_manager and payment.unit_id not in viewer_units:
                     continue
                 activities.append(ActivityItem("payment", "Payment is overdue", payment.due_at, payment.unit_id))
             elif event.name == "maintenance_opened":
                 request_id = event.payload["request_id"]
                 request = self.requests[request_id]
-                if not is_manager and request.unit_id != viewer_unit:
+                if not is_manager and request.unit_id not in viewer_units:
                     continue
                 activities.append(ActivityItem("maintenance", "Maintenance request submitted", event.at, request_id))
             elif event.name == "maintenance_status_changed":
                 request_id = event.payload["request_id"]
                 request = self.requests[request_id]
-                if not is_manager and request.unit_id != viewer_unit:
+                if not is_manager and request.unit_id not in viewer_units:
                     continue
                 activities.append(
                     ActivityItem(
