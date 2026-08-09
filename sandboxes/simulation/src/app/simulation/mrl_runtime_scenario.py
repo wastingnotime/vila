@@ -9,6 +9,7 @@ from app.domain.model import Environment, seeded_environment
 
 START = datetime(2026, 1, 1, tzinfo=timezone.utc)
 ADVANCE = datetime(2026, 1, 6, tzinfo=timezone.utc)
+MANAGER_REVIEW = datetime(2026, 1, 7, tzinfo=timezone.utc)
 
 
 def _run_slice(context: object) -> None:
@@ -40,6 +41,33 @@ def _run_slice(context: object) -> None:
     )
 
 
+def _manager_reviews_request(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    context.emit("intention", "review_maintenance_request", actor="manager-1", payload={"request_id": "request-1"})
+    context.emit(
+        "command",
+        "change_maintenance_status",
+        source="MaintenanceUseCase",
+        actor="manager-1",
+        correlation_id="request-1",
+        payload={"to": "under_review"},
+    )
+    environment.change_request_status(
+        MANAGER_REVIEW,
+        request_id="request-1",
+        manager_id="manager-1",
+        next_status="under_review",
+    )
+    context.emit(
+        "domain_event",
+        "maintenance_status_changed",
+        source="MaintenanceAggregate",
+        actor="manager-1",
+        correlation_id="request-1",
+        payload={"to": "under_review"},
+    )
+
+
 def _status_has_actionable_items(context: object) -> bool:
     environment: Environment = context.environment  # type: ignore[attr-defined]
     return environment.resident_status("resident-1", ADVANCE) == ["overdue_payment", "maintenance_request"]
@@ -68,7 +96,14 @@ def create_simulation() -> Scenario:
                 name="run_status_and_obligations_slice",
                 source="VilaSimulation",
                 correlation_id="slice-1",
-            )
+            ),
+            InitialScheduledAction(
+                when=MANAGER_REVIEW,
+                action=_manager_reviews_request,
+                name="manager_reviews_maintenance_request",
+                source="VilaSimulation",
+                correlation_id="request-1",
+            ),
         ],
         invariants=[Invariant(name="status_has_actionable_items", check=_status_has_actionable_items)],
     )

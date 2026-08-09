@@ -51,6 +51,22 @@ class SimulationModelTests(unittest.TestCase):
         self.assertEqual(len(environment.events), 5)
         self.assertEqual(environment.events[-1].payload["changed_by"], "manager-1")
 
+    def test_event_history_rebuilds_the_same_projection(self) -> None:
+        environment = seeded_environment()
+        now = datetime(2026, 1, 6, tzinfo=timezone.utc)
+        environment.open_request(
+            now,
+            request_id="request-1",
+            resident_id="resident-1",
+            category="plumbing",
+            description="Low water pressure",
+        )
+        original_status = environment.resident_status("resident-1", now)
+        rebuilt = environment.from_history(seeded_environment(), environment.events)
+
+        self.assertEqual(rebuilt.resident_status("resident-1", now), original_status)
+        self.assertEqual(rebuilt.events, environment.events)
+
 
 if __name__ == "__main__":
     unittest.main()

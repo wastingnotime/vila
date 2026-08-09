@@ -43,6 +43,19 @@ class Environment:
         self._apply(event)
         return event
 
+    @classmethod
+    def from_history(cls, initial: "Environment", history: list[Event]) -> "Environment":
+        replayed = cls(
+            condominium_id=initial.condominium_id,
+            units=dict(initial.units),
+            memberships=dict(initial.memberships),
+            payments=[Payment(unit_id=payment.unit_id, due_at=payment.due_at) for payment in initial.payments],
+        )
+        for event in history:
+            replayed.events.append(event)
+            replayed._apply(event)
+        return replayed
+
     def _apply(self, event: Event) -> None:
         if event.name == "payment_overdue":
             self.payments[int(event.payload["payment_index"])].status = "overdue"
