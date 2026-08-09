@@ -67,6 +67,14 @@ def _emit_composed_status_summary(context: object) -> None:
                 "open_delivery_ids": list(summary.open_delivery_ids),
             },
         )
+    notifications = environment.actionable_notifications("manager-1", SUMMARY_AT)
+    context.emit(
+        "projection",
+        "notification_policy_ready",
+        source="NotificationPolicy",
+        actor="manager-1",
+        payload={"kinds": [notification.kind for notification in notifications]},
+    )
 
 
 def _manager_reviews_request(context: object) -> None:

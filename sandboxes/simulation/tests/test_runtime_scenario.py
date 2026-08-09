@@ -42,6 +42,17 @@ class RuntimeScenarioTests(unittest.TestCase):
         }
         self.assertTrue(invariant_results["summary_scope_is_temporal_and_tenant_scoped"])
 
+    def test_runtime_adapter_emits_actionable_notification_policy(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+
+        notifications = [
+            observation
+            for observation in result.observations.observations
+            if observation.name == "notification_policy_ready"
+        ]
+        self.assertEqual(len(notifications), 1)
+        self.assertEqual(notifications[0].payload["kinds"], ["maintenance_review_required"])
+
 
 if __name__ == "__main__":
     unittest.main()
