@@ -37,12 +37,21 @@ class Notification:
     item_ids: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class MembershipPeriod:
+    resident_id: str
+    unit_id: str
+    active_from: datetime
+    active_until: datetime | None = None
+
+
 @dataclass
 class Environment:
     condominium_id: str
     units: dict[str, str]
     memberships: dict[str, str]
     residents: set[str] = field(default_factory=set)
+    membership_history: list[MembershipPeriod] = field(default_factory=list)
     payments: list[Payment] = field(default_factory=list)
     requests: dict[str, MaintenanceRequest] = field(default_factory=dict)
     events: list[Event] = field(default_factory=list)
@@ -61,6 +70,7 @@ class Environment:
             units=dict(initial.units),
             memberships=dict(initial.memberships),
             residents=set(initial.residents),
+            membership_history=list(initial.membership_history),
             payments=[Payment(unit_id=payment.unit_id, due_at=payment.due_at) for payment in initial.payments],
         )
         for event in history:
@@ -90,7 +100,7 @@ class Environment:
         return [payment for payment in self.payments if payment.status == "overdue"]
 
     def open_request(self, now: datetime, *, request_id: str, resident_id: str, category: str, description: str) -> Event:
-        unit_id = self.memberships[resident_id]
+        unit_id = self.unit_for_resident(resident_id, now)
         return self.record(
             "maintenance_opened",
             now,
@@ -121,7 +131,7 @@ class Environment:
         )
 
     def resident_status(self, resident_id: str, now: datetime) -> list[str]:
-        unit_id = self.memberships[resident_id]
+        unit_id = self.unit_for_resident(resident_id, now)
         items = ["overdue_payment" for payment in self.overdue_payments(now) if payment.unit_id == unit_id]
         items.extend(
             "maintenance_request"
@@ -129,6 +139,39 @@ class Environment:
             if request.unit_id == unit_id and request.status not in {"resolved", "rejected"}
         )
         return items
+
+    def unit_for_resident(self, resident_id: str, at: datetime) -> str:
+        if self.membership_history:
+            active = [
+                membership
+                for membership in self.membership_history
+                if membership.resident_id == resident_id
+                and membership.active_from <= at
+                and (membership.active_until is None or at < membership.active_until)
+            ]
+            if not active:
+                raise KeyError(f"resident has no active unit at {at.isoformat()}: {resident_id}")
+            return max(active, key=lambda membership: membership.active_from).unit_id
+        return self.memberships[resident_id]
+
+    def move_resident(self, resident_id: str, new_unit_id: str, at: datetime) -> None:
+        old_unit_id = self.unit_for_resident(resident_id, at)
+        for index, membership in enumerate(self.membership_history):
+            if (
+                membership.resident_id == resident_id
+                and membership.unit_id == old_unit_id
+                and membership.active_until is None
+            ):
+                self.membership_history[index] = MembershipPeriod(
+                    resident_id=membership.resident_id,
+                    unit_id=membership.unit_id,
+                    active_from=membership.active_from,
+                    active_until=at,
+                )
+        self.membership_history.append(
+            MembershipPeriod(resident_id=resident_id, unit_id=new_unit_id, active_from=at)
+        )
+        self.memberships[resident_id] = new_unit_id
 
     def manager_status(self, now: datetime) -> list[str]:
         items = ["overdue_payment" for _ in self.overdue_payments(now)]
@@ -220,6 +263,7 @@ def seeded_environment() -> Environment:
         units={"unit-101": "101"},
         memberships={"resident-1": "unit-101", "manager-1": "unit-101"},
         residents={"resident-1"},
+        membership_history=[MembershipPeriod("resident-1", "unit-101", start)],
         payments=[Payment(unit_id="unit-101", due_at=start.replace(day=5))],
     )
 
@@ -237,6 +281,12 @@ def notification_fatigue_environment() -> Environment:
             "manager-1": "unit-101",
         },
         residents={"resident-1", "resident-1b", "resident-2", "resident-3"},
+        membership_history=[
+            MembershipPeriod("resident-1", "unit-101", start),
+            MembershipPeriod("resident-1b", "unit-101", start),
+            MembershipPeriod("resident-2", "unit-102", start),
+            MembershipPeriod("resident-3", "unit-103", start),
+        ],
         payments=[
             Payment(unit_id="unit-101", due_at=start.replace(day=5)),
             Payment(unit_id="unit-102", due_at=start.replace(day=5)),
