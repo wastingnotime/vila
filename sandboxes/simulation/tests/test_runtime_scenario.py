@@ -66,6 +66,15 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(names.count("announcement_published"), 1)
         self.assertLess(names.index("delivery_received"), names.index("status_summary_ready"))
         self.assertLess(names.index("announcement_published"), names.index("status_summary_ready"))
+        events = {
+            observation.name: observation
+            for observation in result.observations.observations
+            if observation.name in {"delivery_received", "announcement_published"}
+        }
+        self.assertEqual(events["delivery_received"].correlation_id, "delivery-1")
+        self.assertEqual(events["delivery_received"].payload["delivery_id"], "delivery-1")
+        self.assertEqual(events["announcement_published"].correlation_id, "announcement-1")
+        self.assertEqual(events["announcement_published"].payload["announcement_id"], "announcement-1")
 
     def test_runtime_adapter_emits_shared_unit_status_notifications(self) -> None:
         result = SimulationRunner().run(create_simulation())
