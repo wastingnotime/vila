@@ -10,6 +10,7 @@ from app.domain.model import Environment, seeded_environment
 START = datetime(2026, 1, 1, tzinfo=timezone.utc)
 ADVANCE = datetime(2026, 1, 6, tzinfo=timezone.utc)
 MANAGER_REVIEW = datetime(2026, 1, 7, tzinfo=timezone.utc)
+QUEUE_REVIEW = datetime(2026, 2, 8, tzinfo=timezone.utc)
 
 
 def _run_slice(context: object) -> None:
@@ -51,6 +52,36 @@ def _manager_reviews_request(context: object) -> None:
         actor="manager-1",
         correlation_id="request-1",
         payload={"to": "under_review"},
+    )
+
+
+def _run_queue_observation(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    arrival = datetime(2026, 2, 6, tzinfo=timezone.utc)
+    for suffix in ("a", "b"):
+        environment.open_request(
+            arrival,
+            request_id=f"queue-{suffix}",
+            resident_id="resident-1",
+            category="plumbing",
+            description=f"Recurring issue {suffix}",
+        )
+    environment.change_request_status(
+        QUEUE_REVIEW,
+        request_id="queue-a",
+        manager_id="manager-1",
+        next_status="under_review",
+    )
+    attention_queue = sum(
+        request.status in {"submitted", "under_review"}
+        for request in environment.requests.values()
+    )
+    context.emit(
+        "projection",
+        "manager_attention_queue_ready",
+        source="MaintenanceProjection",
+        actor="manager-1",
+        payload={"count": attention_queue},
     )
     environment.change_request_status(
         MANAGER_REVIEW,
@@ -103,6 +134,13 @@ def create_simulation() -> Scenario:
                 name="manager_reviews_maintenance_request",
                 source="VilaSimulation",
                 correlation_id="request-1",
+            ),
+            InitialScheduledAction(
+                when=QUEUE_REVIEW,
+                action=_run_queue_observation,
+                name="observe_manager_attention_queue",
+                source="VilaSimulation",
+                correlation_id="queue-slice-1",
             ),
         ],
         invariants=[Invariant(name="status_has_actionable_items", check=_status_has_actionable_items)],
