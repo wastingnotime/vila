@@ -27,6 +27,9 @@ def run_maintenance_queue(months: int = 3) -> tuple[Environment, list[int]]:
             next_status="under_review",
         )
         queue_sizes.append(
-            sum(request.status == "submitted" for request in environment.requests.values())
+            sum(
+                request.status in {"submitted", "under_review"}
+                for request in environment.requests.values()
+            )
         )
     return environment, queue_sizes

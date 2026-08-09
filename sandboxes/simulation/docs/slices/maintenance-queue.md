@@ -3,8 +3,9 @@
 ## Use-case contract
 
 Over three simulated months, two maintenance requests arrive each month while
-the manager advances one request to `under_review`. The submitted-review queue
-therefore grows from one to three.
+the manager advances one request to `under_review`. The manager-attention queue
+therefore grows from two to six. Requests in `under_review` still require
+manager attention until they are planned or otherwise closed.
 
 ## Hypothesis under test
 
@@ -16,7 +17,7 @@ workflow changes.
 ## Done criteria
 
 - request arrivals and manager responses are deterministic;
-- queue size is measured after each monthly response window;
+- manager-attention queue size includes `submitted` and `under_review` states;
 - transitions retain their manager actor and simulated timestamp;
 - no escalation policy is invented before queue evidence exists.
 

@@ -7,7 +7,7 @@ class MaintenanceQueueTests(unittest.TestCase):
     def test_queue_grows_when_arrivals_outpace_manager_response(self) -> None:
         environment, queue_sizes = run_maintenance_queue()
 
-        self.assertEqual(queue_sizes, [1, 2, 3])
+        self.assertEqual(queue_sizes, [2, 4, 6])
         self.assertEqual(sum(request.status == "under_review" for request in environment.requests.values()), 3)
 
     def test_queue_simulation_horizon_is_bounded(self) -> None:
