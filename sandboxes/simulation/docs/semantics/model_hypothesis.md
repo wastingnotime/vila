@@ -39,5 +39,7 @@ Maintenance requests move `submitted -> under_review -> planned -> in_progress
 
 - When should an overdue obligation notify rather than only appear in status?
 - How many open maintenance requests can a manager handle before escalation?
-- Does a shared unit need one notification or one per resident?
+- Should a shared unit receive one notification or one per resident? Current
+  refinement hypothesis: status is shared at unit level, while notification
+  recipients remain a separate policy decision.
 - What does a resident need to see after moving units?

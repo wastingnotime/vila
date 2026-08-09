@@ -181,6 +181,7 @@ def notification_fatigue_environment() -> Environment:
         units={"unit-101": "101", "unit-102": "102", "unit-103": "103"},
         memberships={
             "resident-1": "unit-101",
+            "resident-1b": "unit-101",
             "resident-2": "unit-102",
             "resident-3": "unit-103",
             "manager-1": "unit-101",

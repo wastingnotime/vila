@@ -6,5 +6,6 @@ request produces one daily actionable notification. Repeating the status query
 does not duplicate it.
 
 This is a simulation policy, not a production notification contract. The next
-question is whether a shared unit and multiple residents require one or several
-recipient notifications.
+refinement adds a second resident to unit 101. Both residents see the same
+unit-level status items, so the current model does not duplicate payment or
+maintenance state per person. Recipient-level notification policy remains open.

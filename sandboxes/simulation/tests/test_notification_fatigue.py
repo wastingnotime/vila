@@ -18,6 +18,18 @@ class NotificationFatigueTests(unittest.TestCase):
         self.assertEqual(environment.actionable_notifications("manager-1", NOW), [])
         self.assertEqual(len(environment.notifications), 1)
 
+    def test_shared_unit_residents_see_the_same_unit_level_status(self) -> None:
+        environment, _ = run_notification_fatigue_slice()
+
+        self.assertEqual(
+            environment.resident_status("resident-1", NOW),
+            environment.resident_status("resident-1b", NOW),
+        )
+        self.assertEqual(
+            environment.resident_status("resident-1b", NOW),
+            ["overdue_payment", "maintenance_request"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
