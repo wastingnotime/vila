@@ -28,6 +28,14 @@ class MaintenanceRequest:
     status: str = "submitted"
 
 
+@dataclass(frozen=True)
+class Notification:
+    recipient_id: str
+    kind: str
+    item_count: int
+    at: datetime
+
+
 @dataclass
 class Environment:
     condominium_id: str
@@ -36,6 +44,7 @@ class Environment:
     payments: list[Payment] = field(default_factory=list)
     requests: dict[str, MaintenanceRequest] = field(default_factory=dict)
     events: list[Event] = field(default_factory=list)
+    notifications: list[Notification] = field(default_factory=list)
 
     def record(self, name: str, at: datetime, **payload: str) -> Event:
         event = Event(name=name, at=at.astimezone(timezone.utc), payload=payload)
@@ -127,6 +136,33 @@ class Environment:
         )
         return items
 
+    def actionable_notifications(self, recipient_id: str, now: datetime) -> list[Notification]:
+        """Return one notification per actionable category and simulated day."""
+        day = now.astimezone(timezone.utc).date()
+        notifications: list[Notification] = []
+        pending_requests = [
+            request
+            for request in self.requests.values()
+            if request.status == "submitted"
+        ]
+        if recipient_id == "manager-1" and pending_requests:
+            already_sent = any(
+                notification.recipient_id == recipient_id
+                and notification.kind == "maintenance_review_required"
+                and notification.at.astimezone(timezone.utc).date() == day
+                for notification in self.notifications
+            )
+            if not already_sent:
+                notification = Notification(
+                    recipient_id=recipient_id,
+                    kind="maintenance_review_required",
+                    item_count=len(pending_requests),
+                    at=now.astimezone(timezone.utc),
+                )
+                self.notifications.append(notification)
+                notifications.append(notification)
+        return notifications
+
 
 def seeded_environment() -> Environment:
     start = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -135,4 +171,23 @@ def seeded_environment() -> Environment:
         units={"unit-101": "101"},
         memberships={"resident-1": "unit-101", "manager-1": "unit-101"},
         payments=[Payment(unit_id="unit-101", due_at=start.replace(day=5))],
+    )
+
+
+def notification_fatigue_environment() -> Environment:
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    return Environment(
+        condominium_id="condo-1",
+        units={"unit-101": "101", "unit-102": "102", "unit-103": "103"},
+        memberships={
+            "resident-1": "unit-101",
+            "resident-2": "unit-102",
+            "resident-3": "unit-103",
+            "manager-1": "unit-101",
+        },
+        payments=[
+            Payment(unit_id="unit-101", due_at=start.replace(day=5)),
+            Payment(unit_id="unit-102", due_at=start.replace(day=5)),
+            Payment(unit_id="unit-103", due_at=start.replace(day=5)),
+        ],
     )
