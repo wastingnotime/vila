@@ -53,36 +53,6 @@ def _manager_reviews_request(context: object) -> None:
         correlation_id="request-1",
         payload={"to": "under_review"},
     )
-
-
-def _run_queue_observation(context: object) -> None:
-    environment: Environment = context.environment  # type: ignore[attr-defined]
-    arrival = datetime(2026, 2, 6, tzinfo=timezone.utc)
-    for suffix in ("a", "b"):
-        environment.open_request(
-            arrival,
-            request_id=f"queue-{suffix}",
-            resident_id="resident-1",
-            category="plumbing",
-            description=f"Recurring issue {suffix}",
-        )
-    environment.change_request_status(
-        QUEUE_REVIEW,
-        request_id="queue-a",
-        manager_id="manager-1",
-        next_status="under_review",
-    )
-    attention_queue = sum(
-        request.status in {"submitted", "under_review"}
-        for request in environment.requests.values()
-    )
-    context.emit(
-        "projection",
-        "manager_attention_queue_ready",
-        source="MaintenanceProjection",
-        actor="manager-1",
-        payload={"count": attention_queue},
-    )
     environment.change_request_status(
         MANAGER_REVIEW,
         request_id="request-1",
@@ -96,6 +66,69 @@ def _run_queue_observation(context: object) -> None:
         actor="manager-1",
         correlation_id="request-1",
         payload={"to": "under_review"},
+    )
+
+
+def _run_queue_observation(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    arrival = datetime(2026, 2, 6, tzinfo=timezone.utc)
+    for suffix in ("a", "b"):
+        request_id = f"queue-{suffix}"
+        context.emit(
+            "intention",
+            "report_maintenance_issue",
+            source="ResidentActor",
+            actor="resident-1",
+            correlation_id=request_id,
+            payload={"request_id": request_id},
+        )
+        environment.open_request(
+            arrival,
+            request_id=request_id,
+            resident_id="resident-1",
+            category="plumbing",
+            description=f"Recurring issue {suffix}",
+        )
+        context.emit(
+            "domain_event",
+            "maintenance_request_opened",
+            source="MaintenanceAggregate",
+            actor="resident-1",
+            correlation_id=request_id,
+            payload={"request_id": request_id},
+        )
+    context.emit(
+        "command",
+        "change_maintenance_status",
+        source="MaintenanceUseCase",
+        actor="manager-1",
+        correlation_id="queue-a",
+        payload={"to": "under_review"},
+    )
+    environment.change_request_status(
+        QUEUE_REVIEW,
+        request_id="queue-a",
+        manager_id="manager-1",
+        next_status="under_review",
+    )
+    context.emit(
+        "domain_event",
+        "maintenance_status_changed",
+        source="MaintenanceAggregate",
+        actor="manager-1",
+        correlation_id="queue-a",
+        payload={"to": "under_review"},
+    )
+    attention_queue = sum(
+        request.status in {"submitted", "under_review"}
+        for request in environment.requests.values()
+    )
+    context.emit(
+        "projection",
+        "manager_attention_queue_ready",
+        source="MaintenanceProjection",
+        actor="manager-1",
+        payload={"count": attention_queue},
     )
 
 

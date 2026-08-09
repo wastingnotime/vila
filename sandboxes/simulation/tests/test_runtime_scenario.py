@@ -15,6 +15,10 @@ class RuntimeScenarioTests(unittest.TestCase):
         ]
         self.assertEqual(len(queue_observations), 1)
         self.assertEqual(queue_observations[0].payload["count"], 3)
+        names = [observation.name for observation in result.observations.observations]
+        self.assertEqual(names.count("report_maintenance_issue"), 2)
+        self.assertEqual(names.count("maintenance_request_opened"), 3)
+        self.assertEqual(names.count("change_maintenance_status"), 2)
 
 
 if __name__ == "__main__":
