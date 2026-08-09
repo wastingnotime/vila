@@ -16,6 +16,7 @@ class Payment:
     unit_id: str
     due_at: datetime
     status: str = "pending"
+    paid_at: datetime | None = None
 
 
 @dataclass
@@ -103,7 +104,7 @@ class Environment:
             memberships=dict(initial.memberships),
             residents=set(initial.residents),
             membership_history=list(initial.membership_history),
-            payments=[Payment(unit_id=payment.unit_id, due_at=payment.due_at) for payment in initial.payments],
+            payments=[Payment(unit_id=payment.unit_id, due_at=payment.due_at, status=payment.status, paid_at=payment.paid_at) for payment in initial.payments],
             announcements=list(initial.announcements),
             deliveries={delivery_id: Delivery(**vars(delivery)) for delivery_id, delivery in initial.deliveries.items()},
         )
@@ -132,6 +133,15 @@ class Environment:
             if payment.status == "pending" and now >= payment.due_at:
                 self.record("payment_overdue", now, payment_index=str(index))
         return [payment for payment in self.payments if payment.status == "overdue"]
+
+    def mark_payment_paid(self, payment_index: int, at: datetime) -> None:
+        payment = self.payments[payment_index]
+        if payment.status == "paid":
+            raise ValueError("payment is already paid")
+        if payment.status == "cancelled":
+            raise ValueError("cancelled payment cannot be paid")
+        payment.status = "paid"
+        payment.paid_at = at.astimezone(timezone.utc)
 
     def open_request(self, now: datetime, *, request_id: str, resident_id: str, category: str, description: str) -> Event:
         unit_id = self.unit_for_resident(resident_id, now)
