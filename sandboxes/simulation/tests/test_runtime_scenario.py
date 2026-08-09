@@ -60,16 +60,21 @@ class RuntimeScenarioTests(unittest.TestCase):
         result = SimulationRunner().run(create_simulation())
 
         histories = {
-            observation.actor: observation.payload["summaries"]
+            observation.actor: observation.payload["entries"]
             for observation in result.observations.observations
             if observation.name == "activity_history_ready"
         }
         self.assertEqual(
-            histories["resident-1"],
+            [entry["summary"] for entry in histories["resident-1"]],
             ["Payment is overdue", "Maintenance request submitted"],
         )
-        self.assertEqual(histories["manager-1"].count("Payment is overdue"), 3)
-        self.assertIn("Maintenance request submitted", histories["manager-1"])
+        self.assertEqual(
+            sum(entry["summary"] == "Payment is overdue" for entry in histories["manager-1"]),
+            3,
+        )
+        self.assertIn("Maintenance request submitted", [entry["summary"] for entry in histories["manager-1"]])
+        self.assertEqual(histories["resident-1"][0]["kind"], "payment")
+        self.assertEqual(histories["resident-1"][1]["subject_id"], "request-1")
 
 
 if __name__ == "__main__":

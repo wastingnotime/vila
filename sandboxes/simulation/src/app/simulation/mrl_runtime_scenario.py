@@ -73,8 +73,13 @@ def _emit_composed_status_summary(context: object) -> None:
             source="ActivityHistoryProjection",
             actor=viewer_id,
             payload={
-                "summaries": [
-                    activity.summary
+                "entries": [
+                    {
+                        "kind": activity.kind,
+                        "summary": activity.summary,
+                        "subject_id": activity.subject_id,
+                        "at": activity.at.isoformat(),
+                    }
                     for activity in environment.activity_history(viewer_id, SUMMARY_AT)
                 ]
             },
