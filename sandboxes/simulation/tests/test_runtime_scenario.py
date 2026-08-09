@@ -67,6 +67,13 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(len(notifications), 1)
         self.assertEqual(notifications[0].payload["recipients"], ["resident-1", "resident-1b"])
         self.assertEqual(notifications[0].payload["item_count"], 2)
+        self.assertEqual(
+            notifications[0].payload["notifications"],
+            [
+                {"recipient_id": "resident-1", "kind": "maintenance_status_under_review", "item_count": 1},
+                {"recipient_id": "resident-1b", "kind": "maintenance_status_under_review", "item_count": 1},
+            ],
+        )
 
     def test_runtime_adapter_emits_role_scoped_activity_history(self) -> None:
         result = SimulationRunner().run(create_simulation())

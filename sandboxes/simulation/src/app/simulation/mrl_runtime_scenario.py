@@ -133,6 +133,14 @@ def _manager_reviews_request(context: object) -> None:
         payload={
             "recipients": [notification.recipient_id for notification in notifications],
             "item_count": sum(notification.item_count for notification in notifications),
+            "notifications": [
+                {
+                    "recipient_id": notification.recipient_id,
+                    "kind": notification.kind,
+                    "item_count": notification.item_count,
+                }
+                for notification in notifications
+            ],
         },
     )
 
