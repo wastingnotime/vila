@@ -34,6 +34,7 @@ class Notification:
     kind: str
     item_count: int
     at: datetime
+    item_ids: tuple[str, ...] = ()
 
 
 @dataclass
@@ -177,19 +178,35 @@ class Environment:
         kind = f"maintenance_status_{request.status}"
         notifications: list[Notification] = []
         for recipient_id in recipients:
-            already_sent = any(
-                notification.recipient_id == recipient_id
-                and notification.kind == kind
-                and notification.at.astimezone(timezone.utc).date() == now.astimezone(timezone.utc).date()
-                for notification in self.notifications
+            existing_index, existing = next(
+                (
+                    (index, notification)
+                    for index, notification in enumerate(self.notifications)
+                    if notification.recipient_id == recipient_id
+                    and notification.kind == kind
+                    and notification.at.astimezone(timezone.utc).date() == now.astimezone(timezone.utc).date()
+                ),
+                (None, None),
             )
-            if already_sent:
+            if existing is not None:
+                if request_id in existing.item_ids:
+                    continue
+                notification = Notification(
+                    recipient_id=recipient_id,
+                    kind=kind,
+                    item_count=existing.item_count + 1,
+                    at=existing.at,
+                    item_ids=tuple(sorted((*existing.item_ids, request_id))),
+                )
+                self.notifications[existing_index] = notification  # type: ignore[index]
+                notifications.append(notification)
                 continue
             notification = Notification(
                 recipient_id=recipient_id,
                 kind=kind,
                 item_count=1,
                 at=now.astimezone(timezone.utc),
+                item_ids=(request_id,),
             )
             self.notifications.append(notification)
             notifications.append(notification)
