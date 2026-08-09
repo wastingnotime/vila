@@ -27,6 +27,7 @@ class MaintenanceRequest:
     category: str
     description: str
     status: str = "submitted"
+    created_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -133,6 +134,7 @@ class Environment:
                 opened_by=event.payload["opened_by"],
                 category=event.payload["category"],
                 description=event.payload["description"],
+                created_at=event.at,
             )
         elif event.name == "maintenance_status_changed":
             request = self.requests[event.payload["request_id"]]
@@ -201,6 +203,7 @@ class Environment:
             "maintenance_request"
             for request in self.requests.values()
             if request.unit_id == unit_id and request.status not in {"resolved", "rejected"}
+            and (request.created_at is None or request.created_at <= now.astimezone(timezone.utc))
         )
         return items
 
@@ -262,6 +265,7 @@ class Environment:
             "maintenance_request"
             for request in self.requests.values()
             if request.status in {"submitted", "under_review"}
+            and (request.created_at is None or request.created_at <= now.astimezone(timezone.utc))
         )
         return items
 
@@ -331,6 +335,7 @@ class Environment:
                 for delivery in self.deliveries.values()
                 if delivery.condominium_id == self.condominium_id
                 and delivery.unit_id in visible_units
+                and delivery.received_at <= at.astimezone(timezone.utc)
                 and delivery.status == "waiting"
             ],
             key=lambda delivery: (delivery.received_at, delivery.delivery_id),
@@ -376,6 +381,8 @@ class Environment:
             viewer_units = {self.unit_for_resident(viewer_id, now)}
         activities: list[ActivityItem] = []
         for event in self.events:
+            if event.at > now.astimezone(timezone.utc):
+                continue
             if event.name == "payment_overdue":
                 payment = self.payments[int(event.payload["payment_index"])]
                 if not is_manager and payment.unit_id not in viewer_units:

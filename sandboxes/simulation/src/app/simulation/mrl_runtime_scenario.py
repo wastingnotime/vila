@@ -164,6 +164,18 @@ def _status_has_actionable_items(context: object) -> bool:
     return environment.resident_status("resident-1", ADVANCE) == ["overdue_payment", "maintenance_request"]
 
 
+def _summary_scope_is_temporal_and_tenant_scoped(context: object) -> bool:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    resident = environment.status_summary("resident-1", SUMMARY_AT)
+    manager = environment.status_summary("manager-1", SUMMARY_AT)
+    return (
+        resident.action_items.count("overdue_payment") == 1
+        and resident.action_items.count("maintenance_request") == 1
+        and manager.action_items.count("overdue_payment") == 3
+        and manager.action_items.count("maintenance_request") == 1
+    )
+
+
 def create_simulation() -> Scenario:
     environment = notification_fatigue_environment()
 
@@ -210,5 +222,8 @@ def create_simulation() -> Scenario:
                 correlation_id="queue-slice-1",
             ),
         ],
-        invariants=[Invariant(name="status_has_actionable_items", check=_status_has_actionable_items)],
+        invariants=[
+            Invariant(name="status_has_actionable_items", check=_status_has_actionable_items),
+            Invariant(name="summary_scope_is_temporal_and_tenant_scoped", check=_summary_scope_is_temporal_and_tenant_scoped),
+        ],
     )

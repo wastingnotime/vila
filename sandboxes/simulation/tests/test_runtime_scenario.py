@@ -35,6 +35,13 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(summaries[0].payload["latest_update"], "Water maintenance")
         self.assertEqual(summaries[0].payload["open_delivery_ids"], ["delivery-1"])
 
+        invariant_results = {
+            observation.name: observation.payload["passed"]
+            for observation in result.observations.observations
+            if observation.type == "invariant_result"
+        }
+        self.assertTrue(invariant_results["summary_scope_is_temporal_and_tenant_scoped"])
+
 
 if __name__ == "__main__":
     unittest.main()
