@@ -65,6 +65,17 @@ class Announcement:
 
 
 @dataclass
+class Delivery:
+    delivery_id: str
+    condominium_id: str
+    unit_id: str
+    description: str
+    received_at: datetime
+    status: str = "waiting"
+    collected_at: datetime | None = None
+
+
+@dataclass
 class Environment:
     condominium_id: str
     units: dict[str, str]
@@ -76,6 +87,7 @@ class Environment:
     events: list[Event] = field(default_factory=list)
     notifications: list[Notification] = field(default_factory=list)
     announcements: list[Announcement] = field(default_factory=list)
+    deliveries: dict[str, Delivery] = field(default_factory=dict)
 
     def record(self, name: str, at: datetime, **payload: str) -> Event:
         event = Event(name=name, at=at.astimezone(timezone.utc), payload=payload)
@@ -93,6 +105,7 @@ class Environment:
             membership_history=list(initial.membership_history),
             payments=[Payment(unit_id=payment.unit_id, due_at=payment.due_at) for payment in initial.payments],
             announcements=list(initial.announcements),
+            deliveries={delivery_id: Delivery(**vars(delivery)) for delivery_id, delivery in initial.deliveries.items()},
         )
         for event in history:
             replayed.events.append(event)
@@ -261,6 +274,44 @@ class Environment:
                 announcement.announcement_id,
             ),
         )
+
+    def record_delivery(self, delivery_id: str, unit_id: str, description: str, received_at: datetime) -> Delivery:
+        if unit_id not in self.units:
+            raise KeyError(f"unknown unit: {unit_id}")
+        delivery = Delivery(
+            delivery_id=delivery_id,
+            condominium_id=self.condominium_id,
+            unit_id=unit_id,
+            description=description,
+            received_at=received_at.astimezone(timezone.utc),
+        )
+        self.deliveries[delivery_id] = delivery
+        return delivery
+
+    def open_deliveries(self, viewer_id: str, at: datetime) -> list[Delivery]:
+        if viewer_id == "manager-1":
+            visible_units = set(self.units)
+        else:
+            visible_units = {self.unit_for_resident(viewer_id, at)}
+        return sorted(
+            [
+                delivery
+                for delivery in self.deliveries.values()
+                if delivery.condominium_id == self.condominium_id
+                and delivery.unit_id in visible_units
+                and delivery.status == "waiting"
+            ],
+            key=lambda delivery: (delivery.received_at, delivery.delivery_id),
+        )
+
+    def collect_delivery(self, delivery_id: str, viewer_id: str, at: datetime) -> None:
+        delivery = self.deliveries[delivery_id]
+        if viewer_id != "manager-1" and self.unit_for_resident(viewer_id, at) != delivery.unit_id:
+            raise PermissionError("resident cannot collect another unit's delivery")
+        if delivery.status != "waiting":
+            raise ValueError("delivery is already collected")
+        delivery.status = "collected"
+        delivery.collected_at = at.astimezone(timezone.utc)
 
     def activity_history(self, viewer_id: str, now: datetime) -> list[ActivityItem]:
         """Build a small user-facing history, not a raw technical event log."""
