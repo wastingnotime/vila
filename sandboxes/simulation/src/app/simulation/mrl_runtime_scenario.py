@@ -10,6 +10,7 @@ from app.domain.model import Environment, notification_fatigue_environment
 START = datetime(2026, 1, 1, tzinfo=timezone.utc)
 ADVANCE = datetime(2026, 1, 6, tzinfo=timezone.utc)
 MANAGER_REVIEW = datetime(2026, 1, 7, tzinfo=timezone.utc)
+PAYMENT_CONFIRMATION = datetime(2026, 1, 8, tzinfo=timezone.utc)
 QUEUE_REVIEW = datetime(2026, 2, 8, tzinfo=timezone.utc)
 SUMMARY_AT = datetime(2026, 1, 6, 1, 0, tzinfo=timezone.utc)
 
@@ -121,6 +122,42 @@ def _resident_collects_delivery(context: object) -> None:
         actor="resident-1",
         correlation_id="delivery-1",
         payload={"delivery_id": "delivery-1"},
+    )
+
+
+def _manager_confirms_payment(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    context.emit(
+        "intention",
+        "confirm_payment",
+        source="ManagerActor",
+        actor="manager-1",
+        correlation_id="payment-0",
+        payload={"payment_index": 0},
+    )
+    context.emit(
+        "command",
+        "mark_payment_paid",
+        source="PaymentUseCase",
+        actor="manager-1",
+        correlation_id="payment-0",
+        payload={"payment_index": 0},
+    )
+    environment.mark_payment_paid(0, PAYMENT_CONFIRMATION)
+    context.emit(
+        "domain_event",
+        "payment_marked_paid",
+        source="PaymentAggregate",
+        actor="manager-1",
+        correlation_id="payment-0",
+        payload={"payment_index": 0},
+    )
+    context.emit(
+        "projection",
+        "manager_payment_status_ready",
+        source="PaymentProjection",
+        actor="manager-1",
+        payload={"overdue_count": len(environment.overdue_payments(PAYMENT_CONFIRMATION))},
     )
     environment.collect_delivery("delivery-1", "resident-1", MANAGER_REVIEW)
     context.emit(
@@ -311,6 +348,13 @@ def create_simulation() -> Scenario:
                 name="observe_manager_attention_queue",
                 source="VilaSimulation",
                 correlation_id="queue-slice-1",
+            ),
+            InitialScheduledAction(
+                when=PAYMENT_CONFIRMATION,
+                action=_manager_confirms_payment,
+                name="manager_confirms_payment",
+                source="VilaSimulation",
+                correlation_id="payment-0",
             ),
         ],
         invariants=[

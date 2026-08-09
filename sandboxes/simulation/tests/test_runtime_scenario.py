@@ -89,6 +89,17 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(collected[0].payload["collected"]["status"], "collected")
         self.assertEqual(collected[0].payload["collected"]["collected_at"], "2026-01-07T00:00:00+00:00")
 
+    def test_runtime_adapter_emits_manual_payment_confirmation(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+
+        confirmations = [
+            observation
+            for observation in result.observations.observations
+            if observation.name == "manager_payment_status_ready"
+        ]
+        self.assertEqual(len(confirmations), 1)
+        self.assertEqual(confirmations[0].payload["overdue_count"], 2)
+
     def test_runtime_adapter_emits_role_scoped_activity_history(self) -> None:
         result = SimulationRunner().run(create_simulation())
 

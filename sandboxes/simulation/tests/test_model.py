@@ -67,6 +67,16 @@ class SimulationModelTests(unittest.TestCase):
         self.assertEqual(rebuilt.resident_status("resident-1", now), original_status)
         self.assertEqual(rebuilt.events, environment.events)
 
+    def test_historical_summary_sees_payment_until_its_payment_timestamp(self) -> None:
+        environment = seeded_environment()
+        due = datetime(2026, 1, 6, tzinfo=timezone.utc)
+        paid = datetime(2026, 1, 8, tzinfo=timezone.utc)
+        environment.overdue_payments(due)
+        environment.mark_payment_paid(0, paid)
+
+        self.assertEqual(environment.manager_status(due), ["overdue_payment"])
+        self.assertEqual(environment.manager_status(paid), [])
+
 
 if __name__ == "__main__":
     unittest.main()

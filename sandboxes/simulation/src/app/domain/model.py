@@ -141,10 +141,19 @@ class Environment:
             request.status = event.payload["to"]
 
     def overdue_payments(self, now: datetime) -> list[Payment]:
+        current = now.astimezone(timezone.utc)
         for index, payment in enumerate(self.payments):
-            if payment.status == "pending" and now >= payment.due_at:
-                self.record("payment_overdue", now, payment_index=str(index))
-        return [payment for payment in self.payments if payment.status == "overdue"]
+            if payment.status == "pending" and current >= payment.due_at:
+                self.record("payment_overdue", current, payment_index=str(index))
+        return [
+            payment
+            for payment in self.payments
+            if current >= payment.due_at
+            and (
+                payment.status in {"pending", "overdue"}
+                or (payment.status == "paid" and payment.paid_at is not None and payment.paid_at > current)
+            )
+        ]
 
     def mark_payment_paid(self, payment_index: int, at: datetime) -> None:
         payment = self.payments[payment_index]
