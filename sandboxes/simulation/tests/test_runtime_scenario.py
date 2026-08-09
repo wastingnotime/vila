@@ -103,6 +103,41 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(confirmations[0].payload["status"], "paid")
         self.assertEqual(confirmations[0].payload["paid_at"], "2026-01-08T00:00:00+00:00")
 
+    def test_runtime_adapter_emits_paid_activity_after_confirmation(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+
+        activity = [
+            observation
+            for observation in result.observations.observations
+            if observation.name == "paid_activity_ready"
+        ]
+        self.assertEqual(len(activity), 1)
+        self.assertEqual(
+            activity[0].payload["entries"],
+            [
+                {
+                    "summary": "Payment is overdue",
+                    "subject_id": "unit-101",
+                    "at": "2026-01-05T00:00:00+00:00",
+                },
+                {
+                    "summary": "Maintenance request submitted",
+                    "subject_id": "request-1",
+                    "at": "2026-01-06T00:00:00+00:00",
+                },
+                {
+                    "summary": "Maintenance request under review",
+                    "subject_id": "request-1",
+                    "at": "2026-01-07T00:00:00+00:00",
+                },
+                {
+                    "summary": "Payment marked paid",
+                    "subject_id": "unit-101",
+                    "at": "2026-01-08T00:00:00+00:00",
+                },
+            ],
+        )
+
     def test_runtime_adapter_emits_role_scoped_activity_history(self) -> None:
         result = SimulationRunner().run(create_simulation())
 

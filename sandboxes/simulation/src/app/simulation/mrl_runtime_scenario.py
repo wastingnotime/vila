@@ -112,6 +112,39 @@ def _manager_reviews_request(context: object) -> None:
         correlation_id="request-1",
         payload={"to": "under_review"},
     )
+    environment.change_request_status(
+        MANAGER_REVIEW,
+        request_id="request-1",
+        manager_id="manager-1",
+        next_status="under_review",
+    )
+    context.emit(
+        "domain_event",
+        "maintenance_status_changed",
+        source="MaintenanceAggregate",
+        actor="manager-1",
+        correlation_id="request-1",
+        payload={"to": "under_review"},
+    )
+    notifications = environment.maintenance_status_notifications("request-1", MANAGER_REVIEW)
+    context.emit(
+        "projection",
+        "resident_maintenance_notifications_ready",
+        source="NotificationPolicy",
+        actor="manager-1",
+        payload={
+            "recipients": [notification.recipient_id for notification in notifications],
+            "item_count": sum(notification.item_count for notification in notifications),
+            "notifications": [
+                {
+                    "recipient_id": notification.recipient_id,
+                    "kind": notification.kind,
+                    "item_count": notification.item_count,
+                }
+                for notification in notifications
+            ],
+        },
+    )
 
 
 def _resident_collects_delivery(context: object) -> None:
@@ -123,6 +156,29 @@ def _resident_collects_delivery(context: object) -> None:
         actor="resident-1",
         correlation_id="delivery-1",
         payload={"delivery_id": "delivery-1"},
+    )
+    environment.collect_delivery("delivery-1", "resident-1", MANAGER_REVIEW)
+    context.emit(
+        "domain_event",
+        "delivery_collected",
+        source="DeliveryAggregate",
+        actor="resident-1",
+        correlation_id="delivery-1",
+        payload={"delivery_id": "delivery-1"},
+    )
+    context.emit(
+        "projection",
+        "open_deliveries_ready",
+        source="DeliveryProjection",
+        actor="resident-1",
+        payload={
+            "delivery_ids": [delivery.delivery_id for delivery in environment.open_deliveries("resident-1", MANAGER_REVIEW)],
+            "collected": {
+                "delivery_id": environment.deliveries["delivery-1"].delivery_id,
+                "status": environment.deliveries["delivery-1"].status,
+                "collected_at": environment.deliveries["delivery-1"].collected_at.isoformat(),
+            },
+        },
     )
 
 
@@ -165,60 +221,24 @@ def _manager_confirms_payment(context: object) -> None:
             "paid_at": environment.payments[0].paid_at.isoformat(),
         },
     )
-    environment.collect_delivery("delivery-1", "resident-1", MANAGER_REVIEW)
-    context.emit(
-        "domain_event",
-        "delivery_collected",
-        source="DeliveryAggregate",
-        actor="resident-1",
-        correlation_id="delivery-1",
-        payload={"delivery_id": "delivery-1"},
-    )
+
+
+def _emit_paid_activity(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
     context.emit(
         "projection",
-        "open_deliveries_ready",
-        source="DeliveryProjection",
+        "paid_activity_ready",
+        source="ActivityHistoryProjection",
         actor="resident-1",
         payload={
-            "delivery_ids": [delivery.delivery_id for delivery in environment.open_deliveries("resident-1", MANAGER_REVIEW)],
-            "collected": {
-                "delivery_id": environment.deliveries["delivery-1"].delivery_id,
-                "status": environment.deliveries["delivery-1"].status,
-                "collected_at": environment.deliveries["delivery-1"].collected_at.isoformat(),
-            },
-        },
-    )
-    environment.change_request_status(
-        MANAGER_REVIEW,
-        request_id="request-1",
-        manager_id="manager-1",
-        next_status="under_review",
-    )
-    context.emit(
-        "domain_event",
-        "maintenance_status_changed",
-        source="MaintenanceAggregate",
-        actor="manager-1",
-        correlation_id="request-1",
-        payload={"to": "under_review"},
-    )
-    notifications = environment.maintenance_status_notifications("request-1", MANAGER_REVIEW)
-    context.emit(
-        "projection",
-        "resident_maintenance_notifications_ready",
-        source="NotificationPolicy",
-        actor="manager-1",
-        payload={
-            "recipients": [notification.recipient_id for notification in notifications],
-            "item_count": sum(notification.item_count for notification in notifications),
-            "notifications": [
+            "entries": [
                 {
-                    "recipient_id": notification.recipient_id,
-                    "kind": notification.kind,
-                    "item_count": notification.item_count,
+                    "summary": activity.summary,
+                    "subject_id": activity.subject_id,
+                    "at": activity.at.isoformat(),
                 }
-                for notification in notifications
-            ],
+                for activity in environment.activity_history("resident-1", PAYMENT_CONFIRMATION)
+            ]
         },
     )
 
@@ -359,6 +379,13 @@ def create_simulation() -> Scenario:
                 when=PAYMENT_CONFIRMATION,
                 action=_manager_confirms_payment,
                 name="manager_confirms_payment",
+                source="VilaSimulation",
+                correlation_id="payment-0",
+            ),
+            InitialScheduledAction(
+                when=PAYMENT_CONFIRMATION,
+                action=_emit_paid_activity,
+                name="emit_paid_activity",
                 source="VilaSimulation",
                 correlation_id="payment-0",
             ),
