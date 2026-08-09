@@ -46,13 +46,14 @@ def _run_slice(context: object) -> None:
 
 def _emit_composed_status_summary(context: object) -> None:
     environment: Environment = context.environment  # type: ignore[attr-defined]
-    environment.record_delivery("delivery-1", "unit-101", "Small package", SUMMARY_AT)
+    environment.record_delivery("delivery-1", "unit-101", "Small package", SUMMARY_AT, recorded_by="manager-1")
     environment.publish_announcement(
         "announcement-1",
         "Water maintenance",
         "Water will be unavailable Thursday.",
         "normal",
         SUMMARY_AT,
+        published_by="manager-1",
     )
     for viewer_id in ("resident-1", "manager-1"):
         summary = environment.status_summary(viewer_id, SUMMARY_AT)

@@ -288,7 +288,10 @@ class Environment:
         priority: str,
         published_at: datetime,
         expires_at: datetime | None = None,
+        published_by: str | None = None,
     ) -> Announcement:
+        if published_by is not None:
+            self.require_manager(published_by)
         if priority not in {"normal", "high"}:
             raise ValueError(f"unknown announcement priority: {priority}")
         announcement = Announcement(
@@ -320,7 +323,16 @@ class Environment:
             ),
         )
 
-    def record_delivery(self, delivery_id: str, unit_id: str, description: str, received_at: datetime) -> Delivery:
+    def record_delivery(
+        self,
+        delivery_id: str,
+        unit_id: str,
+        description: str,
+        received_at: datetime,
+        recorded_by: str | None = None,
+    ) -> Delivery:
+        if recorded_by is not None:
+            self.require_manager(recorded_by)
         if delivery_id in self.deliveries:
             raise ValueError(f"delivery already exists: {delivery_id}")
         if unit_id not in self.units:

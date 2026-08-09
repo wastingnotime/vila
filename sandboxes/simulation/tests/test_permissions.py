@@ -82,6 +82,30 @@ class PermissionTests(unittest.TestCase):
             )
         self.assertEqual(environment.events, [])
 
+    def test_resident_cannot_publish_or_record_manager_owned_items(self) -> None:
+        environment = notification_fatigue_environment()
+        now = datetime(2026, 1, 6, tzinfo=timezone.utc)
+
+        with self.assertRaises(PermissionError):
+            environment.publish_announcement(
+                "announcement-1",
+                "Notice",
+                "Not allowed",
+                "normal",
+                now,
+                published_by="resident-1",
+            )
+        with self.assertRaises(PermissionError):
+            environment.record_delivery(
+                "delivery-1",
+                "unit-101",
+                "Package",
+                now,
+                recorded_by="resident-1",
+            )
+        self.assertEqual(environment.announcements, [])
+        self.assertEqual(environment.deliveries, {})
+
 
 if __name__ == "__main__":
     unittest.main()
