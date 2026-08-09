@@ -45,6 +45,14 @@ class MembershipPeriod:
     active_until: datetime | None = None
 
 
+@dataclass(frozen=True)
+class ActivityItem:
+    kind: str
+    summary: str
+    at: datetime
+    subject_id: str
+
+
 @dataclass
 class Environment:
     condominium_id: str
@@ -200,6 +208,39 @@ class Environment:
             if request.status in {"submitted", "under_review"}
         )
         return items
+
+    def activity_history(self, viewer_id: str, now: datetime) -> list[ActivityItem]:
+        """Build a small user-facing history, not a raw technical event log."""
+        self.overdue_payments(now)
+        is_manager = viewer_id == "manager-1"
+        viewer_unit = None if is_manager else self.unit_for_resident(viewer_id, now)
+        activities: list[ActivityItem] = []
+        for event in self.events:
+            if event.name == "payment_overdue":
+                payment = self.payments[int(event.payload["payment_index"])]
+                if not is_manager and payment.unit_id != viewer_unit:
+                    continue
+                activities.append(ActivityItem("payment", "Payment is overdue", payment.due_at, payment.unit_id))
+            elif event.name == "maintenance_opened":
+                request_id = event.payload["request_id"]
+                request = self.requests[request_id]
+                if not is_manager and request.unit_id != viewer_unit:
+                    continue
+                activities.append(ActivityItem("maintenance", "Maintenance request submitted", event.at, request_id))
+            elif event.name == "maintenance_status_changed":
+                request_id = event.payload["request_id"]
+                request = self.requests[request_id]
+                if not is_manager and request.unit_id != viewer_unit:
+                    continue
+                activities.append(
+                    ActivityItem(
+                        "maintenance",
+                        f"Maintenance request {event.payload['to'].replace('_', ' ')}",
+                        event.at,
+                        request_id,
+                    )
+                )
+        return sorted(activities, key=lambda activity: activity.at)
 
     def actionable_notifications(self, recipient_id: str, now: datetime) -> list[Notification]:
         """Return one notification per actionable category and simulated day."""
