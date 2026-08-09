@@ -85,6 +85,9 @@ class RuntimeScenarioTests(unittest.TestCase):
         ]
         self.assertEqual(len(collected), 1)
         self.assertEqual(collected[0].payload["delivery_ids"], [])
+        self.assertEqual(collected[0].payload["collected"]["delivery_id"], "delivery-1")
+        self.assertEqual(collected[0].payload["collected"]["status"], "collected")
+        self.assertEqual(collected[0].payload["collected"]["collected_at"], "2026-01-07T00:00:00+00:00")
 
     def test_runtime_adapter_emits_role_scoped_activity_history(self) -> None:
         result = SimulationRunner().run(create_simulation())

@@ -136,7 +136,14 @@ def _resident_collects_delivery(context: object) -> None:
         "open_deliveries_ready",
         source="DeliveryProjection",
         actor="resident-1",
-        payload={"delivery_ids": [delivery.delivery_id for delivery in environment.open_deliveries("resident-1", MANAGER_REVIEW)]},
+        payload={
+            "delivery_ids": [delivery.delivery_id for delivery in environment.open_deliveries("resident-1", MANAGER_REVIEW)],
+            "collected": {
+                "delivery_id": environment.deliveries["delivery-1"].delivery_id,
+                "status": environment.deliveries["delivery-1"].status,
+                "collected_at": environment.deliveries["delivery-1"].collected_at.isoformat(),
+            },
+        },
     )
     environment.change_request_status(
         MANAGER_REVIEW,
