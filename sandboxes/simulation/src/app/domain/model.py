@@ -41,6 +41,7 @@ class Environment:
     condominium_id: str
     units: dict[str, str]
     memberships: dict[str, str]
+    residents: set[str] = field(default_factory=set)
     payments: list[Payment] = field(default_factory=list)
     requests: dict[str, MaintenanceRequest] = field(default_factory=dict)
     events: list[Event] = field(default_factory=list)
@@ -58,6 +59,7 @@ class Environment:
             condominium_id=initial.condominium_id,
             units=dict(initial.units),
             memberships=dict(initial.memberships),
+            residents=set(initial.residents),
             payments=[Payment(unit_id=payment.unit_id, due_at=payment.due_at) for payment in initial.payments],
         )
         for event in history:
@@ -163,6 +165,36 @@ class Environment:
                 notifications.append(notification)
         return notifications
 
+    def maintenance_status_notifications(self, request_id: str, now: datetime) -> list[Notification]:
+        request = self.requests[request_id]
+        recipients = sorted(
+            [
+            resident_id
+            for resident_id in self.residents
+            if self.memberships.get(resident_id) == request.unit_id
+            ]
+        )
+        kind = f"maintenance_status_{request.status}"
+        notifications: list[Notification] = []
+        for recipient_id in recipients:
+            already_sent = any(
+                notification.recipient_id == recipient_id
+                and notification.kind == kind
+                and notification.at.astimezone(timezone.utc).date() == now.astimezone(timezone.utc).date()
+                for notification in self.notifications
+            )
+            if already_sent:
+                continue
+            notification = Notification(
+                recipient_id=recipient_id,
+                kind=kind,
+                item_count=1,
+                at=now.astimezone(timezone.utc),
+            )
+            self.notifications.append(notification)
+            notifications.append(notification)
+        return notifications
+
 
 def seeded_environment() -> Environment:
     start = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -170,6 +202,7 @@ def seeded_environment() -> Environment:
         condominium_id="condo-1",
         units={"unit-101": "101"},
         memberships={"resident-1": "unit-101", "manager-1": "unit-101"},
+        residents={"resident-1"},
         payments=[Payment(unit_id="unit-101", due_at=start.replace(day=5))],
     )
 
@@ -186,6 +219,7 @@ def notification_fatigue_environment() -> Environment:
             "resident-3": "unit-103",
             "manager-1": "unit-101",
         },
+        residents={"resident-1", "resident-1b", "resident-2", "resident-3"},
         payments=[
             Payment(unit_id="unit-101", due_at=start.replace(day=5)),
             Payment(unit_id="unit-102", due_at=start.replace(day=5)),
