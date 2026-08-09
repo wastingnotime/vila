@@ -85,7 +85,16 @@ class RuntimeScenarioTests(unittest.TestCase):
         ]
 
         self.assertEqual(len(empty), 1)
+        self.assertEqual(empty[0].correlation_id, "empty-summary-1")
         self.assertEqual(empty[0].payload, {"action_items": [], "latest_update": None, "open_delivery_ids": []})
+
+        invariant_results = [
+            observation.payload["passed"]
+            for observation in result.observations.observations
+            if observation.type == "invariant_result"
+        ]
+        self.assertTrue(invariant_results)
+        self.assertTrue(all(invariant_results))
 
     def test_runtime_adapter_emits_shared_unit_status_notifications(self) -> None:
         result = SimulationRunner().run(create_simulation())

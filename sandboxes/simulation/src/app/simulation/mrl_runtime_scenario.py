@@ -37,6 +37,7 @@ def _emit_empty_status_summary(context: object) -> None:
         "empty_status_summary_ready",
         source="StatusSummaryProjection",
         actor="resident-1",
+        correlation_id="empty-summary-1",
         payload={
             "action_items": list(summary.action_items),
             "latest_update": summary.latest_update,

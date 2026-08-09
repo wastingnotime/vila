@@ -6,3 +6,6 @@ before later simulated activity begins.
 
 The runtime invariants are now observation-window aware, so they do not report
 false failures before the simulated state they validate has occurred.
+
+The refinement verifies the empty projection correlation ID and confirms that
+all emitted invariant results pass, including the initial observation window.
