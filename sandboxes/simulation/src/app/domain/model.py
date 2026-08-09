@@ -55,6 +55,14 @@ class ActivityItem:
 
 
 @dataclass(frozen=True)
+class StatusSummary:
+    viewer_id: str
+    action_items: tuple[str, ...]
+    latest_update: str | None
+    open_delivery_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class Announcement:
     condominium_id: str
     announcement_id: str
@@ -326,6 +334,21 @@ class Environment:
                 and delivery.status == "waiting"
             ],
             key=lambda delivery: (delivery.received_at, delivery.delivery_id),
+        )
+
+    def status_summary(self, viewer_id: str, at: datetime) -> StatusSummary:
+        if viewer_id == "manager-1":
+            action_items = self.manager_status(at)
+        else:
+            action_items = self.resident_status(viewer_id, at)
+        open_deliveries = self.open_deliveries(viewer_id, at)
+        action_items = [*action_items, *(["delivery"] * len(open_deliveries))]
+        announcements = self.active_announcements(at)
+        return StatusSummary(
+            viewer_id=viewer_id,
+            action_items=tuple(action_items),
+            latest_update=announcements[0].title if announcements else None,
+            open_delivery_ids=tuple(delivery.delivery_id for delivery in open_deliveries),
         )
 
     def collect_delivery(self, delivery_id: str, viewer_id: str, at: datetime) -> None:
