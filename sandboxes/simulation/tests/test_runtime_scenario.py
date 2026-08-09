@@ -56,6 +56,17 @@ class RuntimeScenarioTests(unittest.TestCase):
             [{"kind": "maintenance_review_required", "item_count": 1}],
         )
 
+    def test_runtime_adapter_traces_manager_status_inputs(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+        names = [observation.name for observation in result.observations.observations]
+
+        self.assertEqual(names.count("record_delivery"), 1)
+        self.assertEqual(names.count("delivery_received"), 1)
+        self.assertEqual(names.count("publish_announcement"), 1)
+        self.assertEqual(names.count("announcement_published"), 1)
+        self.assertLess(names.index("delivery_received"), names.index("status_summary_ready"))
+        self.assertLess(names.index("announcement_published"), names.index("status_summary_ready"))
+
     def test_runtime_adapter_emits_shared_unit_status_notifications(self) -> None:
         result = SimulationRunner().run(create_simulation())
 

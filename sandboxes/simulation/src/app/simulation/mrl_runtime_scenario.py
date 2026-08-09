@@ -46,7 +46,31 @@ def _run_slice(context: object) -> None:
 
 def _emit_composed_status_summary(context: object) -> None:
     environment: Environment = context.environment  # type: ignore[attr-defined]
+    context.emit(
+        "intention",
+        "record_delivery",
+        source="ManagerActor",
+        actor="manager-1",
+        correlation_id="delivery-1",
+        payload={"delivery_id": "delivery-1", "unit_id": "unit-101"},
+    )
     environment.record_delivery("delivery-1", "unit-101", "Small package", SUMMARY_AT, recorded_by="manager-1")
+    context.emit(
+        "domain_event",
+        "delivery_received",
+        source="DeliveryAggregate",
+        actor="manager-1",
+        correlation_id="delivery-1",
+        payload={"delivery_id": "delivery-1"},
+    )
+    context.emit(
+        "intention",
+        "publish_announcement",
+        source="ManagerActor",
+        actor="manager-1",
+        correlation_id="announcement-1",
+        payload={"announcement_id": "announcement-1"},
+    )
     environment.publish_announcement(
         "announcement-1",
         "Water maintenance",
@@ -54,6 +78,14 @@ def _emit_composed_status_summary(context: object) -> None:
         "normal",
         SUMMARY_AT,
         published_by="manager-1",
+    )
+    context.emit(
+        "domain_event",
+        "announcement_published",
+        source="AnnouncementAggregate",
+        actor="manager-1",
+        correlation_id="announcement-1",
+        payload={"announcement_id": "announcement-1"},
     )
     for viewer_id in ("resident-1", "manager-1"):
         summary = environment.status_summary(viewer_id, SUMMARY_AT)
