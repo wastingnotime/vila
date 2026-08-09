@@ -138,6 +138,14 @@ class RuntimeScenarioTests(unittest.TestCase):
             ],
         )
 
+    def test_runtime_actions_remain_in_chronological_order(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+        names = [observation.name for observation in result.observations.observations]
+
+        self.assertLess(names.index("maintenance_status_changed"), names.index("resident_maintenance_notifications_ready"))
+        self.assertLess(names.index("delivery_collected"), names.index("open_deliveries_ready"))
+        self.assertLess(names.index("payment_marked_paid"), names.index("paid_activity_ready"))
+
     def test_runtime_adapter_emits_role_scoped_activity_history(self) -> None:
         result = SimulationRunner().run(create_simulation())
 
