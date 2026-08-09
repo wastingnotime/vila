@@ -21,6 +21,7 @@ updates remain separate from the action list.
 - action ordering is deterministic;
 - latest announcement does not inflate action counts;
 - open deliveries are represented without exposing unrelated units.
+- an empty summary explicitly represents no current action, update, or delivery.
 
 ## Out of scope
 

@@ -1,5 +1,8 @@
 import unittest
 
+from datetime import datetime, timezone
+
+from app.domain.model import seeded_environment
 from app.simulation.status_summary import run_status_summary_slice
 
 
@@ -18,6 +21,14 @@ class StatusSummaryTests(unittest.TestCase):
         self.assertEqual(manager.action_items.count("maintenance_request"), 1)
         self.assertEqual(manager.action_items.count("delivery"), 1)
         self.assertEqual(manager.latest_update, "Water maintenance")
+
+    def test_empty_summary_explicitly_answers_that_nothing_requires_action(self) -> None:
+        environment = seeded_environment()
+        summary = environment.status_summary("resident-1", datetime(2026, 1, 1, tzinfo=timezone.utc))
+
+        self.assertEqual(summary.action_items, ())
+        self.assertIsNone(summary.latest_update)
+        self.assertEqual(summary.open_delivery_ids, ())
 
 
 if __name__ == "__main__":
