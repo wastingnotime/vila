@@ -159,8 +159,7 @@ class Environment:
         )
 
     def change_request_status(self, now: datetime, *, request_id: str, manager_id: str, next_status: str) -> Event:
-        if self.roles.get(manager_id) != "building_manager":
-            raise PermissionError("only a building manager can change maintenance status")
+        self.require_manager(manager_id)
         request = self.requests[request_id]
         allowed = {
             "submitted": {"under_review", "rejected"},
@@ -182,6 +181,10 @@ class Environment:
     def require_resident(self, resident_id: str) -> None:
         if self.roles.get(resident_id) != "resident":
             raise PermissionError("only a resident can perform this action")
+
+    def require_manager(self, manager_id: str) -> None:
+        if self.roles.get(manager_id) != "building_manager":
+            raise PermissionError("only a building manager can perform this action")
 
     def resident_status(self, resident_id: str, now: datetime) -> list[str]:
         unit_id = self.unit_for_resident(resident_id, now)

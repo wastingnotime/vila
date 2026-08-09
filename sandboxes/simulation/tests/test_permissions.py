@@ -15,6 +15,7 @@ class PermissionTests(unittest.TestCase):
             category="plumbing",
             description="Low water pressure",
         )
+        event_count_after_submission = len(environment.events)
 
         with self.assertRaises(PermissionError):
             environment.change_request_status(
@@ -23,6 +24,7 @@ class PermissionTests(unittest.TestCase):
                 manager_id="resident-1",
                 next_status="under_review",
             )
+        self.assertEqual(len(environment.events), event_count_after_submission)
 
     def test_manager_can_change_status_after_resident_submits(self) -> None:
         environment = notification_fatigue_environment()
@@ -55,6 +57,22 @@ class PermissionTests(unittest.TestCase):
                 category="plumbing",
                 description="Low water pressure",
             )
+
+        self.assertEqual(environment.events, [])
+
+    def test_manager_cannot_submit_a_resident_request(self) -> None:
+        environment = notification_fatigue_environment()
+        now = datetime(2026, 1, 6, tzinfo=timezone.utc)
+
+        with self.assertRaises(PermissionError):
+            environment.open_request(
+                now,
+                request_id="request-1",
+                resident_id="manager-1",
+                category="plumbing",
+                description="Low water pressure",
+            )
+        self.assertEqual(environment.events, [])
 
 
 if __name__ == "__main__":
