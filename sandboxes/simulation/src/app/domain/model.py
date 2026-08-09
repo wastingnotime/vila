@@ -155,6 +155,8 @@ class Environment:
         return self.memberships[resident_id]
 
     def move_resident(self, resident_id: str, new_unit_id: str, at: datetime) -> None:
+        if new_unit_id not in self.units:
+            raise KeyError(f"unknown unit: {new_unit_id}")
         old_unit_id = self.unit_for_resident(resident_id, at)
         for index, membership in enumerate(self.membership_history):
             if (
@@ -172,6 +174,23 @@ class Environment:
             MembershipPeriod(resident_id=resident_id, unit_id=new_unit_id, active_from=at)
         )
         self.memberships[resident_id] = new_unit_id
+
+    def leave_resident(self, resident_id: str, at: datetime) -> None:
+        current_unit_id = self.unit_for_resident(resident_id, at)
+        for index, membership in enumerate(self.membership_history):
+            if (
+                membership.resident_id == resident_id
+                and membership.unit_id == current_unit_id
+                and membership.active_until is None
+            ):
+                self.membership_history[index] = MembershipPeriod(
+                    resident_id=membership.resident_id,
+                    unit_id=membership.unit_id,
+                    active_from=membership.active_from,
+                    active_until=at,
+                )
+        self.memberships.pop(resident_id, None)
+        self.residents.discard(resident_id)
 
     def manager_status(self, now: datetime) -> list[str]:
         items = ["overdue_payment" for _ in self.overdue_payments(now)]

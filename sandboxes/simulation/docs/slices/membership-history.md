@@ -12,13 +12,15 @@ associated with unit 101 and remains auditable.
 - a resident has at most one active unit at a simulated instant;
 - current status uses the active membership, not historical membership;
 - historical requests are not reassigned when a resident moves;
-- a resident without an active membership cannot resolve a current unit.
+- a resident without an active membership cannot resolve a current unit;
+- departure removes current access without deleting membership history.
 
 ## Done criteria
 
 - movement creates a closed old membership and an open new membership;
 - status after movement does not leak old-unit items;
 - old-unit activity remains queryable;
+- departure leaves an auditable closed membership;
 - deterministic tests cover the boundary instant.
 
 ## Out of scope

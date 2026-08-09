@@ -10,6 +10,10 @@ class MembershipHistoryTests(unittest.TestCase):
         environment, status = run_membership_history_slice()
 
         self.assertEqual(status, ["overdue_payment"])
+        self.assertEqual(
+            environment.unit_for_resident("resident-1", MOVE_AT.replace(day=9, hour=23, minute=59)),
+            "unit-101",
+        )
         self.assertEqual(environment.unit_for_resident("resident-1", MOVE_AT), "unit-102")
         self.assertEqual(len(environment.membership_history), 5)
 
@@ -28,6 +32,15 @@ class MembershipHistoryTests(unittest.TestCase):
         self.assertEqual(environment.requests["request-1"].unit_id, "unit-101")
         with self.assertRaises(KeyError):
             environment.unit_for_resident("resident-1", datetime(2025, 12, 31, tzinfo=timezone.utc))
+
+    def test_departure_removes_current_access_but_retains_membership_history(self) -> None:
+        environment = notification_fatigue_environment()
+        environment.leave_resident("resident-1", MOVE_AT)
+
+        with self.assertRaises(KeyError):
+            environment.unit_for_resident("resident-1", MOVE_AT)
+        self.assertNotIn("resident-1", environment.residents)
+        self.assertEqual(environment.membership_history[0].active_until, MOVE_AT)
 
 
 if __name__ == "__main__":
