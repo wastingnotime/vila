@@ -276,6 +276,8 @@ class Environment:
         )
 
     def record_delivery(self, delivery_id: str, unit_id: str, description: str, received_at: datetime) -> Delivery:
+        if delivery_id in self.deliveries:
+            raise ValueError(f"delivery already exists: {delivery_id}")
         if unit_id not in self.units:
             raise KeyError(f"unknown unit: {unit_id}")
         delivery = Delivery(

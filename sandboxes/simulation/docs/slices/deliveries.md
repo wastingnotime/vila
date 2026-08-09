@@ -9,6 +9,7 @@ collection, the delivery leaves open items but remains historical data.
 ## Rules
 
 - deliveries are condominium- and unit-scoped;
+- delivery identifiers are unique within the simulation;
 - only waiting deliveries appear as open items;
 - collection is explicit and timestamped;
 - manager visibility covers all units in the condominium;
@@ -19,7 +20,8 @@ collection, the delivery leaves open items but remains historical data.
 - resident visibility is unit-scoped;
 - collection is authorized and idempotence is guarded;
 - collection preserves delivery history;
-- manager can inspect open deliveries across units.
+- manager can inspect open deliveries across units;
+- foreign-condominium deliveries are excluded from every view.
 
 ## Out of scope
 
