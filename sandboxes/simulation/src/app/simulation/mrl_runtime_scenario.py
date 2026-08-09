@@ -143,7 +143,7 @@ def _manager_confirms_payment(context: object) -> None:
         correlation_id="payment-0",
         payload={"payment_index": 0},
     )
-    environment.mark_payment_paid(0, PAYMENT_CONFIRMATION)
+    environment.mark_payment_paid(0, PAYMENT_CONFIRMATION, confirmed_by="manager-1")
     context.emit(
         "domain_event",
         "payment_marked_paid",
@@ -157,7 +157,12 @@ def _manager_confirms_payment(context: object) -> None:
         "manager_payment_status_ready",
         source="PaymentProjection",
         actor="manager-1",
-        payload={"overdue_count": len(environment.overdue_payments(PAYMENT_CONFIRMATION))},
+        payload={
+            "overdue_count": len(environment.overdue_payments(PAYMENT_CONFIRMATION)),
+            "payment_index": 0,
+            "status": environment.payments[0].status,
+            "paid_at": environment.payments[0].paid_at.isoformat(),
+        },
     )
     environment.collect_delivery("delivery-1", "resident-1", MANAGER_REVIEW)
     context.emit(

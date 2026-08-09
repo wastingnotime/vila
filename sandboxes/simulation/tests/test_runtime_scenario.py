@@ -99,6 +99,9 @@ class RuntimeScenarioTests(unittest.TestCase):
         ]
         self.assertEqual(len(confirmations), 1)
         self.assertEqual(confirmations[0].payload["overdue_count"], 2)
+        self.assertEqual(confirmations[0].payload["payment_index"], 0)
+        self.assertEqual(confirmations[0].payload["status"], "paid")
+        self.assertEqual(confirmations[0].payload["paid_at"], "2026-01-08T00:00:00+00:00")
 
     def test_runtime_adapter_emits_role_scoped_activity_history(self) -> None:
         result = SimulationRunner().run(create_simulation())

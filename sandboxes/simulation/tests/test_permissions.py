@@ -60,6 +60,14 @@ class PermissionTests(unittest.TestCase):
 
         self.assertEqual(environment.events, [])
 
+    def test_resident_cannot_confirm_a_payment_as_manager(self) -> None:
+        environment = notification_fatigue_environment()
+        now = datetime(2026, 1, 8, tzinfo=timezone.utc)
+
+        with self.assertRaises(PermissionError):
+            environment.mark_payment_paid(0, now, confirmed_by="resident-1")
+        self.assertEqual(environment.payments[0].status, "pending")
+
     def test_manager_cannot_submit_a_resident_request(self) -> None:
         environment = notification_fatigue_environment()
         now = datetime(2026, 1, 6, tzinfo=timezone.utc)
