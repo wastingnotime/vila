@@ -20,6 +20,15 @@ The WNT runtime adapter is available through:
 mrl-simulation supervise --once
 ```
 
+To create a replayable JSONL observation log, run the repository tool with the
+runtime on `PYTHONPATH`:
+
+```bash
+PYTHONPATH="$PWD/sandboxes/simulation/src:/home/henrique/.wnt/runtime/mrl" \
+  python3 sandboxes/simulation/tools/run_scenario.py \
+  --output runs/status-slice.jsonl
+```
+
 ## First slice
 
 The first slice models one resident and one building manager over a short
