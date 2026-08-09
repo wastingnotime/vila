@@ -11,6 +11,7 @@ START = datetime(2026, 1, 1, tzinfo=timezone.utc)
 ADVANCE = datetime(2026, 1, 6, tzinfo=timezone.utc)
 MANAGER_REVIEW = datetime(2026, 1, 7, tzinfo=timezone.utc)
 QUEUE_REVIEW = datetime(2026, 2, 8, tzinfo=timezone.utc)
+SUMMARY_AT = datetime(2026, 1, 6, 1, 0, tzinfo=timezone.utc)
 
 
 def _run_slice(context: object) -> None:
@@ -40,6 +41,31 @@ def _run_slice(context: object) -> None:
         actor="manager-1",
         payload={"items": environment.manager_status(ADVANCE)},
     )
+
+
+def _emit_composed_status_summary(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    environment.record_delivery("delivery-1", "unit-101", "Small package", SUMMARY_AT)
+    environment.publish_announcement(
+        "announcement-1",
+        "Water maintenance",
+        "Water will be unavailable Thursday.",
+        "normal",
+        SUMMARY_AT,
+    )
+    for viewer_id in ("resident-1", "manager-1"):
+        summary = environment.status_summary(viewer_id, SUMMARY_AT)
+        context.emit(
+            "projection",
+            "status_summary_ready",
+            source="StatusSummaryProjection",
+            actor=viewer_id,
+            payload={
+                "action_items": list(summary.action_items),
+                "latest_update": summary.latest_update,
+                "open_delivery_ids": list(summary.open_delivery_ids),
+            },
+        )
 
 
 def _manager_reviews_request(context: object) -> None:
@@ -154,6 +180,13 @@ def create_simulation() -> Scenario:
         run_id="status-slice-2026-01-01",
         actors=[Actor(name="resident-1", behavior=ResidentActor())],
         scheduled_actions=[
+            InitialScheduledAction(
+                when=SUMMARY_AT,
+                action=_emit_composed_status_summary,
+                name="emit_composed_status_summary",
+                source="VilaSimulation",
+                correlation_id="summary-slice-1",
+            ),
             InitialScheduledAction(
                 when=ADVANCE,
                 action=_run_slice,
