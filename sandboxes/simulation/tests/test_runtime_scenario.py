@@ -56,6 +56,21 @@ class RuntimeScenarioTests(unittest.TestCase):
             [{"kind": "maintenance_review_required", "item_count": 1}],
         )
 
+    def test_runtime_adapter_emits_role_scoped_activity_history(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+
+        histories = {
+            observation.actor: observation.payload["summaries"]
+            for observation in result.observations.observations
+            if observation.name == "activity_history_ready"
+        }
+        self.assertEqual(
+            histories["resident-1"],
+            ["Payment is overdue", "Maintenance request submitted"],
+        )
+        self.assertEqual(histories["manager-1"].count("Payment is overdue"), 3)
+        self.assertIn("Maintenance request submitted", histories["manager-1"])
+
 
 if __name__ == "__main__":
     unittest.main()

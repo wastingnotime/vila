@@ -67,6 +67,18 @@ def _emit_composed_status_summary(context: object) -> None:
                 "open_delivery_ids": list(summary.open_delivery_ids),
             },
         )
+        context.emit(
+            "projection",
+            "activity_history_ready",
+            source="ActivityHistoryProjection",
+            actor=viewer_id,
+            payload={
+                "summaries": [
+                    activity.summary
+                    for activity in environment.activity_history(viewer_id, SUMMARY_AT)
+                ]
+            },
+        )
     notifications = environment.actionable_notifications("manager-1", SUMMARY_AT)
     context.emit(
         "projection",
