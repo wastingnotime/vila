@@ -7,6 +7,8 @@ UNITS = ("unit-101", "unit-102", "unit-103")
 
 
 def run_monthly_obligations(months: int = 3) -> tuple[Environment, list[int]]:
+    if not 1 <= months <= 12:
+        raise ValueError("months must be between 1 and 12")
     environment = notification_fatigue_environment()
     environment.payments.clear()
     overdue_counts: list[int] = []

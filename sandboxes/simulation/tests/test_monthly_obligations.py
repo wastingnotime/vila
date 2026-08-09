@@ -17,6 +17,12 @@ class MonthlyObligationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             environment.mark_payment_paid(0, environment.payments[0].paid_at)
 
+    def test_simulation_horizon_is_bounded_to_one_year(self) -> None:
+        with self.assertRaises(ValueError):
+            run_monthly_obligations(months=0)
+        with self.assertRaises(ValueError):
+            run_monthly_obligations(months=13)
+
 
 if __name__ == "__main__":
     unittest.main()

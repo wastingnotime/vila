@@ -9,6 +9,7 @@ from one to three outstanding obligations.
 ## Rules
 
 - recurring obligations are generated once per month;
+- a run spans one to twelve months;
 - overdue status is derived from simulated time;
 - payment confirmation is a manual external handoff;
 - a paid obligation cannot be paid again;
@@ -20,6 +21,7 @@ from one to three outstanding obligations.
 - late payment pressure is measurable over time;
 - manual payment handoff updates status;
 - repeated payment confirmation is rejected.
+- invalid simulation horizons are rejected.
 
 ## Out of scope
 
