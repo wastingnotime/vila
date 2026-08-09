@@ -73,7 +73,12 @@ def _emit_composed_status_summary(context: object) -> None:
         "notification_policy_ready",
         source="NotificationPolicy",
         actor="manager-1",
-        payload={"kinds": [notification.kind for notification in notifications]},
+        payload={
+            "notifications": [
+                {"kind": notification.kind, "item_count": notification.item_count}
+                for notification in notifications
+            ]
+        },
     )
 
 

@@ -51,7 +51,10 @@ class RuntimeScenarioTests(unittest.TestCase):
             if observation.name == "notification_policy_ready"
         ]
         self.assertEqual(len(notifications), 1)
-        self.assertEqual(notifications[0].payload["kinds"], ["maintenance_review_required"])
+        self.assertEqual(
+            notifications[0].payload["notifications"],
+            [{"kind": "maintenance_review_required", "item_count": 1}],
+        )
 
 
 if __name__ == "__main__":
