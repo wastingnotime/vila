@@ -56,6 +56,18 @@ class RuntimeScenarioTests(unittest.TestCase):
             [{"kind": "maintenance_review_required", "item_count": 1}],
         )
 
+    def test_runtime_adapter_emits_shared_unit_status_notifications(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+
+        notifications = [
+            observation
+            for observation in result.observations.observations
+            if observation.name == "resident_maintenance_notifications_ready"
+        ]
+        self.assertEqual(len(notifications), 1)
+        self.assertEqual(notifications[0].payload["recipients"], ["resident-1", "resident-1b"])
+        self.assertEqual(notifications[0].payload["item_count"], 2)
+
     def test_runtime_adapter_emits_role_scoped_activity_history(self) -> None:
         result = SimulationRunner().run(create_simulation())
 

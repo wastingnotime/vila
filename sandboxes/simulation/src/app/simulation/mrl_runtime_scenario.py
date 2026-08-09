@@ -124,6 +124,17 @@ def _manager_reviews_request(context: object) -> None:
         correlation_id="request-1",
         payload={"to": "under_review"},
     )
+    notifications = environment.maintenance_status_notifications("request-1", MANAGER_REVIEW)
+    context.emit(
+        "projection",
+        "resident_maintenance_notifications_ready",
+        source="NotificationPolicy",
+        actor="manager-1",
+        payload={
+            "recipients": [notification.recipient_id for notification in notifications],
+            "item_count": sum(notification.item_count for notification in notifications),
+        },
+    )
 
 
 def _run_queue_observation(context: object) -> None:
