@@ -139,6 +139,10 @@ class Environment:
         elif event.name == "maintenance_status_changed":
             request = self.requests[event.payload["request_id"]]
             request.status = event.payload["to"]
+        elif event.name == "payment_paid":
+            payment = self.payments[int(event.payload["payment_index"])]
+            payment.status = "paid"
+            payment.paid_at = event.at
 
     def overdue_payments(self, now: datetime) -> list[Payment]:
         current = now.astimezone(timezone.utc)
@@ -165,6 +169,7 @@ class Environment:
             raise ValueError("cancelled payment cannot be paid")
         payment.status = "paid"
         payment.paid_at = at.astimezone(timezone.utc)
+        self.record("payment_paid", payment.paid_at, payment_index=str(payment_index))
 
     def open_request(self, now: datetime, *, request_id: str, resident_id: str, category: str, description: str) -> Event:
         self.require_resident(resident_id)
@@ -410,6 +415,11 @@ class Environment:
                 if not is_manager and payment.unit_id not in viewer_units:
                     continue
                 activities.append(ActivityItem("payment", "Payment is overdue", payment.due_at, payment.unit_id))
+            elif event.name == "payment_paid":
+                payment = self.payments[int(event.payload["payment_index"])]
+                if not is_manager and payment.unit_id not in viewer_units:
+                    continue
+                activities.append(ActivityItem("payment", "Payment marked paid", event.at, payment.unit_id))
             elif event.name == "maintenance_opened":
                 request_id = event.payload["request_id"]
                 request = self.requests[request_id]

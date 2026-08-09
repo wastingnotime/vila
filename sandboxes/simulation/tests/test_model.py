@@ -77,6 +77,19 @@ class SimulationModelTests(unittest.TestCase):
         self.assertEqual(environment.manager_status(due), ["overdue_payment"])
         self.assertEqual(environment.manager_status(paid), [])
 
+    def test_payment_confirmation_is_auditable_and_replayable(self) -> None:
+        environment = seeded_environment()
+        now = datetime(2026, 1, 8, tzinfo=timezone.utc)
+        environment.mark_payment_paid(0, now, confirmed_by="manager-1")
+
+        rebuilt = environment.from_history(seeded_environment(), environment.events)
+        self.assertEqual(environment.events[-1].name, "payment_paid")
+        self.assertEqual(rebuilt.payments[0].status, "paid")
+        self.assertEqual(
+            [item.summary for item in environment.activity_history("resident-1", now)],
+            ["Payment marked paid"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
