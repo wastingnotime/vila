@@ -53,6 +53,16 @@ class ActivityItem:
     subject_id: str
 
 
+@dataclass(frozen=True)
+class Announcement:
+    announcement_id: str
+    title: str
+    body: str
+    priority: str
+    published_at: datetime
+    expires_at: datetime | None = None
+
+
 @dataclass
 class Environment:
     condominium_id: str
@@ -64,6 +74,7 @@ class Environment:
     requests: dict[str, MaintenanceRequest] = field(default_factory=dict)
     events: list[Event] = field(default_factory=list)
     notifications: list[Notification] = field(default_factory=list)
+    announcements: list[Announcement] = field(default_factory=list)
 
     def record(self, name: str, at: datetime, **payload: str) -> Event:
         event = Event(name=name, at=at.astimezone(timezone.utc), payload=payload)
@@ -80,6 +91,7 @@ class Environment:
             residents=set(initial.residents),
             membership_history=list(initial.membership_history),
             payments=[Payment(unit_id=payment.unit_id, due_at=payment.due_at) for payment in initial.payments],
+            announcements=list(initial.announcements),
         )
         for event in history:
             replayed.events.append(event)
@@ -208,6 +220,40 @@ class Environment:
             if request.status in {"submitted", "under_review"}
         )
         return items
+
+    def publish_announcement(
+        self,
+        announcement_id: str,
+        title: str,
+        body: str,
+        priority: str,
+        published_at: datetime,
+        expires_at: datetime | None = None,
+    ) -> Announcement:
+        if priority not in {"normal", "high"}:
+            raise ValueError(f"unknown announcement priority: {priority}")
+        announcement = Announcement(
+            announcement_id=announcement_id,
+            title=title,
+            body=body,
+            priority=priority,
+            published_at=published_at.astimezone(timezone.utc),
+            expires_at=expires_at.astimezone(timezone.utc) if expires_at else None,
+        )
+        self.announcements.append(announcement)
+        return announcement
+
+    def active_announcements(self, now: datetime) -> list[Announcement]:
+        current = now.astimezone(timezone.utc)
+        return sorted(
+            [
+                announcement
+                for announcement in self.announcements
+                if announcement.published_at <= current
+                and (announcement.expires_at is None or current < announcement.expires_at)
+            ],
+            key=lambda announcement: (announcement.priority != "high", -announcement.published_at.timestamp()),
+        )
 
     def activity_history(self, viewer_id: str, now: datetime) -> list[ActivityItem]:
         """Build a small user-facing history, not a raw technical event log."""
