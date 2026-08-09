@@ -27,6 +27,22 @@ def _run_slice(context: object) -> None:
         category="plumbing",
         description="Water pressure is low in the kitchen.",
     )
+
+
+def _emit_empty_status_summary(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    summary = environment.status_summary("resident-1", START)
+    context.emit(
+        "projection",
+        "empty_status_summary_ready",
+        source="StatusSummaryProjection",
+        actor="resident-1",
+        payload={
+            "action_items": list(summary.action_items),
+            "latest_update": summary.latest_update,
+            "open_delivery_ids": list(summary.open_delivery_ids),
+        },
+    )
     context.emit("domain_event", "maintenance_request_opened", source="MaintenanceAggregate", actor="resident-1")
     context.emit(
         "projection",
@@ -340,11 +356,15 @@ def _run_queue_observation(context: object) -> None:
 
 def _status_has_actionable_items(context: object) -> bool:
     environment: Environment = context.environment  # type: ignore[attr-defined]
+    if context.clock.now() < ADVANCE:  # type: ignore[attr-defined]
+        return True
     return environment.resident_status("resident-1", ADVANCE) == ["overdue_payment", "maintenance_request"]
 
 
 def _summary_scope_is_temporal_and_tenant_scoped(context: object) -> bool:
     environment: Environment = context.environment  # type: ignore[attr-defined]
+    if context.clock.now() < SUMMARY_AT:  # type: ignore[attr-defined]
+        return True
     resident = environment.status_summary("resident-1", SUMMARY_AT)
     manager = environment.status_summary("manager-1", SUMMARY_AT)
     return (
@@ -372,6 +392,13 @@ def create_simulation() -> Scenario:
         run_id="status-slice-2026-01-01",
         actors=[Actor(name="resident-1", behavior=ResidentActor())],
         scheduled_actions=[
+            InitialScheduledAction(
+                when=START,
+                action=_emit_empty_status_summary,
+                name="emit_empty_status_summary",
+                source="VilaSimulation",
+                correlation_id="empty-summary-1",
+            ),
             InitialScheduledAction(
                 when=SUMMARY_AT,
                 action=_emit_composed_status_summary,
