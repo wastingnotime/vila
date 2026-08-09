@@ -14,6 +14,7 @@ def run_announcement_slice() -> tuple[Environment, list[str]]:
         "Water will be unavailable Thursday from 09:00 to 11:00.",
         "normal",
         NOW.replace(day=5),
+        published_by="manager-1",
     )
     environment.publish_announcement(
         "announcement-2",
@@ -22,5 +23,6 @@ def run_announcement_slice() -> tuple[Environment, list[str]]:
         "high",
         NOW,
         NOW.replace(day=7),
+        published_by="manager-1",
     )
     return environment, [announcement.title for announcement in environment.active_announcements(NOW)]

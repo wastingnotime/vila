@@ -13,5 +13,5 @@ def run_multi_unit_status_slice() -> tuple[Environment, object, object]:
         description="Low water pressure",
     )
     environment.overdue_payments(NOW)
-    environment.record_delivery("delivery-2", "unit-102", "Large package", NOW)
+    environment.record_delivery("delivery-2", "unit-102", "Large package", NOW, recorded_by="manager-1")
     return environment, environment.status_summary("resident-1", NOW), environment.status_summary("manager-1", NOW)

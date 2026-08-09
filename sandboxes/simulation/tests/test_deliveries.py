@@ -31,7 +31,7 @@ class DeliveryTests(unittest.TestCase):
         environment, _ = run_delivery_slice()
 
         with self.assertRaises(ValueError):
-            environment.record_delivery("delivery-1", "unit-101", "Replacement package", NOW)
+            environment.record_delivery("delivery-1", "unit-101", "Replacement package", NOW, recorded_by="manager-1")
         self.assertEqual(environment.deliveries["delivery-1"].description, "Small package")
 
     def test_foreign_condominium_delivery_is_not_visible(self) -> None:

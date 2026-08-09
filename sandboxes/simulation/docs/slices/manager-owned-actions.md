@@ -11,7 +11,7 @@ create them.
 - supplied actors are checked before state mutation;
 - denied commands do not create announcements or deliveries;
 - payment and maintenance role boundaries remain unchanged;
-- internal deterministic fixtures may omit actor arguments when seeding state.
+- deterministic fixtures supply an explicit manager actor as well.
 
 ## Done criteria
 
