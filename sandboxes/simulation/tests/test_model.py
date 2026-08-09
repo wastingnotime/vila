@@ -90,6 +90,11 @@ class SimulationModelTests(unittest.TestCase):
             ["Payment marked paid"],
         )
 
+        event_count = len(environment.events)
+        with self.assertRaises(ValueError):
+            environment.mark_payment_paid(0, now, confirmed_by="manager-1")
+        self.assertEqual(len(environment.events), event_count)
+
 
 if __name__ == "__main__":
     unittest.main()
