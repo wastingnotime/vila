@@ -75,6 +75,17 @@ class RuntimeScenarioTests(unittest.TestCase):
             ],
         )
 
+    def test_runtime_adapter_emits_delivery_collection(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+
+        collected = [
+            observation
+            for observation in result.observations.observations
+            if observation.name == "open_deliveries_ready"
+        ]
+        self.assertEqual(len(collected), 1)
+        self.assertEqual(collected[0].payload["delivery_ids"], [])
+
     def test_runtime_adapter_emits_role_scoped_activity_history(self) -> None:
         result = SimulationRunner().run(create_simulation())
 

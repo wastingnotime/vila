@@ -110,6 +110,34 @@ def _manager_reviews_request(context: object) -> None:
         correlation_id="request-1",
         payload={"to": "under_review"},
     )
+
+
+def _resident_collects_delivery(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    context.emit(
+        "intention",
+        "collect_delivery",
+        source="ResidentActor",
+        actor="resident-1",
+        correlation_id="delivery-1",
+        payload={"delivery_id": "delivery-1"},
+    )
+    environment.collect_delivery("delivery-1", "resident-1", MANAGER_REVIEW)
+    context.emit(
+        "domain_event",
+        "delivery_collected",
+        source="DeliveryAggregate",
+        actor="resident-1",
+        correlation_id="delivery-1",
+        payload={"delivery_id": "delivery-1"},
+    )
+    context.emit(
+        "projection",
+        "open_deliveries_ready",
+        source="DeliveryProjection",
+        actor="resident-1",
+        payload={"delivery_ids": [delivery.delivery_id for delivery in environment.open_deliveries("resident-1", MANAGER_REVIEW)]},
+    )
     environment.change_request_status(
         MANAGER_REVIEW,
         request_id="request-1",
@@ -262,6 +290,13 @@ def create_simulation() -> Scenario:
                 name="manager_reviews_maintenance_request",
                 source="VilaSimulation",
                 correlation_id="request-1",
+            ),
+            InitialScheduledAction(
+                when=MANAGER_REVIEW,
+                action=_resident_collects_delivery,
+                name="resident_collects_delivery",
+                source="VilaSimulation",
+                correlation_id="delivery-1",
             ),
             InitialScheduledAction(
                 when=QUEUE_REVIEW,
