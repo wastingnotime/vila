@@ -61,6 +61,7 @@ def _emit_composed_status_summary(context: object) -> None:
             source="StatusSummaryProjection",
             actor=viewer_id,
             payload={
+                "role": environment.roles[viewer_id],
                 "action_items": list(summary.action_items),
                 "latest_update": summary.latest_update,
                 "open_delivery_ids": list(summary.open_delivery_ids),

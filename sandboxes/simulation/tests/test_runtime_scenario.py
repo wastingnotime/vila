@@ -29,6 +29,7 @@ class RuntimeScenarioTests(unittest.TestCase):
             if observation.name == "status_summary_ready"
         ]
         self.assertEqual([observation.actor for observation in summaries], ["resident-1", "manager-1"])
+        self.assertEqual([observation.payload["role"] for observation in summaries], ["resident", "building_manager"])
         self.assertEqual(summaries[0].payload["latest_update"], "Water maintenance")
         self.assertEqual(summaries[0].payload["open_delivery_ids"], ["delivery-1"])
 
