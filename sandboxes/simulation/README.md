@@ -29,6 +29,9 @@ PYTHONPATH="$PWD/sandboxes/simulation/src:/home/henrique/.wnt/runtime/mrl" \
   --output runs/status-slice.jsonl
 ```
 
+The command exits non-zero when any runtime invariant fails, while preserving
+the JSONL output for diagnosis.
+
 ## First slice
 
 The first slice models one resident and one building manager over a short

@@ -32,6 +32,18 @@ def main() -> int:
         args.output.write_text(output, encoding="utf-8")
     else:
         print(output, end="")
+    failed_invariants = [
+        observation
+        for observation in result.observations.observations
+        if observation.type == "invariant_result"
+        and observation.payload.get("passed") is False
+    ]
+    if failed_invariants:
+        print(
+            f"{len(failed_invariants)} simulation invariant(s) failed",
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 
