@@ -82,6 +82,7 @@ class Environment:
     units: dict[str, str]
     memberships: dict[str, str]
     residents: set[str] = field(default_factory=set)
+    roles: dict[str, str] = field(default_factory=dict)
     membership_history: list[MembershipPeriod] = field(default_factory=list)
     payments: list[Payment] = field(default_factory=list)
     requests: dict[str, MaintenanceRequest] = field(default_factory=dict)
@@ -103,6 +104,7 @@ class Environment:
             units=dict(initial.units),
             memberships=dict(initial.memberships),
             residents=set(initial.residents),
+            roles=dict(initial.roles),
             membership_history=list(initial.membership_history),
             payments=[Payment(unit_id=payment.unit_id, due_at=payment.due_at, status=payment.status, paid_at=payment.paid_at) for payment in initial.payments],
             announcements=list(initial.announcements),
@@ -144,6 +146,7 @@ class Environment:
         payment.paid_at = at.astimezone(timezone.utc)
 
     def open_request(self, now: datetime, *, request_id: str, resident_id: str, category: str, description: str) -> Event:
+        self.require_resident(resident_id)
         unit_id = self.unit_for_resident(resident_id, now)
         return self.record(
             "maintenance_opened",
@@ -156,6 +159,8 @@ class Environment:
         )
 
     def change_request_status(self, now: datetime, *, request_id: str, manager_id: str, next_status: str) -> Event:
+        if self.roles.get(manager_id) != "building_manager":
+            raise PermissionError("only a building manager can change maintenance status")
         request = self.requests[request_id]
         allowed = {
             "submitted": {"under_review", "rejected"},
@@ -173,6 +178,10 @@ class Environment:
             to=next_status,
             changed_by=manager_id,
         )
+
+    def require_resident(self, resident_id: str) -> None:
+        if self.roles.get(resident_id) != "resident":
+            raise PermissionError("only a resident can perform this action")
 
     def resident_status(self, resident_id: str, now: datetime) -> list[str]:
         unit_id = self.unit_for_resident(resident_id, now)
@@ -448,6 +457,7 @@ def seeded_environment() -> Environment:
         units={"unit-101": "101"},
         memberships={"resident-1": "unit-101", "manager-1": "unit-101"},
         residents={"resident-1"},
+        roles={"resident-1": "resident", "manager-1": "building_manager"},
         membership_history=[MembershipPeriod("resident-1", "unit-101", start)],
         payments=[Payment(unit_id="unit-101", due_at=start.replace(day=5))],
     )
@@ -466,6 +476,13 @@ def notification_fatigue_environment() -> Environment:
             "manager-1": "unit-101",
         },
         residents={"resident-1", "resident-1b", "resident-2", "resident-3"},
+        roles={
+            "resident-1": "resident",
+            "resident-1b": "resident",
+            "resident-2": "resident",
+            "resident-3": "resident",
+            "manager-1": "building_manager",
+        },
         membership_history=[
             MembershipPeriod("resident-1", "unit-101", start),
             MembershipPeriod("resident-1b", "unit-101", start),
