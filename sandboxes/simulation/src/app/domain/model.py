@@ -55,6 +55,7 @@ class ActivityItem:
 
 @dataclass(frozen=True)
 class Announcement:
+    condominium_id: str
     announcement_id: str
     title: str
     body: str
@@ -233,6 +234,7 @@ class Environment:
         if priority not in {"normal", "high"}:
             raise ValueError(f"unknown announcement priority: {priority}")
         announcement = Announcement(
+            condominium_id=self.condominium_id,
             announcement_id=announcement_id,
             title=title,
             body=body,
@@ -249,10 +251,15 @@ class Environment:
             [
                 announcement
                 for announcement in self.announcements
+                if announcement.condominium_id == self.condominium_id
                 if announcement.published_at <= current
                 and (announcement.expires_at is None or current < announcement.expires_at)
             ],
-            key=lambda announcement: (announcement.priority != "high", -announcement.published_at.timestamp()),
+            key=lambda announcement: (
+                announcement.priority != "high",
+                -announcement.published_at.timestamp(),
+                announcement.announcement_id,
+            ),
         )
 
     def activity_history(self, viewer_id: str, now: datetime) -> list[ActivityItem]:

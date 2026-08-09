@@ -8,7 +8,8 @@ from the active view but remain in the simulation history.
 
 ## Rules
 
-- announcements are condominium-wide in this simulation;
+- announcements are condominium-wide within their own condominium;
+- announcements from another condominium are never visible;
 - publication starts at an inclusive timestamp;
 - expiration ends at an exclusive timestamp;
 - high-priority updates are ordered before normal updates;
@@ -18,6 +19,7 @@ from the active view but remain in the simulation history.
 
 - active announcements are time-scoped;
 - priority ordering is deterministic;
+- equal-priority ties are deterministic;
 - expiration does not delete history;
 - announcement visibility does not change payment or maintenance status counts.
 

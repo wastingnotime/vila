@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime, timezone
 
+from app.domain.model import Announcement
 from app.simulation.announcements import NOW, run_announcement_slice
 
 
@@ -21,6 +22,21 @@ class AnnouncementTests(unittest.TestCase):
         environment, _ = run_announcement_slice()
 
         self.assertEqual(len(environment.active_announcements(NOW.replace(day=7))), 1)
+
+    def test_other_condominium_announcement_is_not_visible(self) -> None:
+        environment, _ = run_announcement_slice()
+        environment.announcements.append(
+            Announcement(
+                condominium_id="other-condo",
+                announcement_id="other-1",
+                title="Other building",
+                body="Not visible here",
+                priority="high",
+                published_at=NOW,
+            )
+        )
+
+        self.assertNotIn("Other building", [item.title for item in environment.active_announcements(NOW)])
 
 
 if __name__ == "__main__":
