@@ -4,7 +4,7 @@ from mrl_simulation_runtime.actors import Actor
 from mrl_simulation_runtime.invariants import Invariant
 from mrl_simulation_runtime.scenario import InitialScheduledAction, Scenario
 
-from app.domain.model import Environment, seeded_environment
+from app.domain.model import Environment, notification_fatigue_environment
 
 
 START = datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -165,7 +165,7 @@ def _status_has_actionable_items(context: object) -> bool:
 
 
 def create_simulation() -> Scenario:
-    environment = seeded_environment()
+    environment = notification_fatigue_environment()
 
     def attach_environment(context: object) -> None:
         context.environment = environment  # type: ignore[attr-defined]
