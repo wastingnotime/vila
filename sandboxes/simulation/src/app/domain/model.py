@@ -143,6 +143,48 @@ class Environment:
             payment = self.payments[int(event.payload["payment_index"])]
             payment.status = "paid"
             payment.paid_at = event.at
+        elif event.name == "resident_moved":
+            self._close_membership(event.payload["resident_id"], event.payload["from_unit_id"], event.at)
+            self.membership_history.append(
+                MembershipPeriod(
+                    resident_id=event.payload["resident_id"],
+                    unit_id=event.payload["to_unit_id"],
+                    active_from=event.at,
+                )
+            )
+            self.memberships[event.payload["resident_id"]] = event.payload["to_unit_id"]
+        elif event.name == "resident_departed":
+            self._close_membership(
+                event.payload["resident_id"],
+                event.payload["unit_id"],
+                event.at,
+            )
+            self.memberships.pop(event.payload["resident_id"], None)
+            self.residents.discard(event.payload["resident_id"])
+        elif event.name == "resident_rejoined":
+            self.membership_history.append(
+                MembershipPeriod(
+                    resident_id=event.payload["resident_id"],
+                    unit_id=event.payload["unit_id"],
+                    active_from=event.at,
+                )
+            )
+            self.memberships[event.payload["resident_id"]] = event.payload["unit_id"]
+            self.residents.add(event.payload["resident_id"])
+
+    def _close_membership(self, resident_id: str, unit_id: str, at: datetime) -> None:
+        for index, membership in enumerate(self.membership_history):
+            if (
+                membership.resident_id == resident_id
+                and membership.unit_id == unit_id
+                and membership.active_until is None
+            ):
+                self.membership_history[index] = MembershipPeriod(
+                    resident_id=membership.resident_id,
+                    unit_id=membership.unit_id,
+                    active_from=membership.active_from,
+                    active_until=at,
+                )
 
     def overdue_payments(self, now: datetime) -> list[Payment]:
         current = now.astimezone(timezone.utc)
@@ -241,39 +283,17 @@ class Environment:
         if new_unit_id not in self.units:
             raise KeyError(f"unknown unit: {new_unit_id}")
         old_unit_id = self.unit_for_resident(resident_id, at)
-        for index, membership in enumerate(self.membership_history):
-            if (
-                membership.resident_id == resident_id
-                and membership.unit_id == old_unit_id
-                and membership.active_until is None
-            ):
-                self.membership_history[index] = MembershipPeriod(
-                    resident_id=membership.resident_id,
-                    unit_id=membership.unit_id,
-                    active_from=membership.active_from,
-                    active_until=at,
-                )
-        self.membership_history.append(
-            MembershipPeriod(resident_id=resident_id, unit_id=new_unit_id, active_from=at)
+        self.record(
+            "resident_moved",
+            at,
+            resident_id=resident_id,
+            from_unit_id=old_unit_id,
+            to_unit_id=new_unit_id,
         )
-        self.memberships[resident_id] = new_unit_id
 
     def leave_resident(self, resident_id: str, at: datetime) -> None:
         current_unit_id = self.unit_for_resident(resident_id, at)
-        for index, membership in enumerate(self.membership_history):
-            if (
-                membership.resident_id == resident_id
-                and membership.unit_id == current_unit_id
-                and membership.active_until is None
-            ):
-                self.membership_history[index] = MembershipPeriod(
-                    resident_id=membership.resident_id,
-                    unit_id=membership.unit_id,
-                    active_from=membership.active_from,
-                    active_until=at,
-                )
-        self.memberships.pop(resident_id, None)
-        self.residents.discard(resident_id)
+        self.record("resident_departed", at, resident_id=resident_id, unit_id=current_unit_id)
 
     def rejoin_resident(self, resident_id: str, unit_id: str, at: datetime) -> None:
         if self.roles.get(resident_id) != "resident":
@@ -283,11 +303,7 @@ class Environment:
         try:
             self.unit_for_resident(resident_id, at)
         except KeyError:
-            self.membership_history.append(
-                MembershipPeriod(resident_id=resident_id, unit_id=unit_id, active_from=at)
-            )
-            self.memberships[resident_id] = unit_id
-            self.residents.add(resident_id)
+            self.record("resident_rejoined", at, resident_id=resident_id, unit_id=unit_id)
             return
         raise ValueError("resident already has an active membership")
 
