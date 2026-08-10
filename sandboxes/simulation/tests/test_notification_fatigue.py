@@ -49,6 +49,12 @@ class NotificationFatigueTests(unittest.TestCase):
         self.assertEqual(len(notifications), 1)
         self.assertEqual(notifications[0].item_count, 1)
 
+    def test_unknown_actor_cannot_request_manager_notifications(self) -> None:
+        environment, _ = run_notification_fatigue_slice()
+
+        with self.assertRaises(PermissionError):
+            environment.actionable_notifications("unknown-user", NOW)
+
 
 if __name__ == "__main__":
     unittest.main()
