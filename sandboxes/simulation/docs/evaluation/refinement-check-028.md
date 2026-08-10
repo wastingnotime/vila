@@ -3,3 +3,6 @@
 The runtime now observes announcement expiration: the announcement is absent
 from the active list after its expiry timestamp but remains retained in the
 environment history.
+
+The refinement verifies the announcement correlation ID and preserves the
+exclusive-expiration boundary in runtime evidence.

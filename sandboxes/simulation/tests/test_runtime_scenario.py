@@ -105,6 +105,7 @@ class RuntimeScenarioTests(unittest.TestCase):
         ]
 
         self.assertEqual(len(closed), 1)
+        self.assertEqual(closed[0].correlation_id, "announcement-1")
         self.assertEqual(closed[0].payload, {"active_ids": [], "retained_ids": ["announcement-1"]})
 
     def test_runtime_adapter_emits_shared_unit_status_notifications(self) -> None:
