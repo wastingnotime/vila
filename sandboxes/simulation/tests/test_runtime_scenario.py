@@ -29,8 +29,19 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertIn(("maintenance-queue", "resident-notifications"), edges)
         self.assertIn(("payment-flow", "activity-history"), edges)
         self.assertIn(("delivery-flow", "status-summary"), edges)
-        self.assertEqual(nodes["status-summary"].layer, "projection")
+        self.assertEqual(nodes["status-summary"].layer, "projections")
         self.assertEqual(nodes["resident-notifications"].kind, "notification")
+        self.assertIsNone(nodes["resident-actor"].realm)
+        self.assertIsNone(nodes["status-summary"].domain)
+        self.assertEqual(
+            {node.domain for node in nodes.values() if node.domain},
+            {"maintenance", "delivery", "payment", "announcement"},
+        )
+        self.assertTrue(all(edge.from_node in nodes and edge.to_node in nodes for edge in scenario.observatory_edges))
+        self.assertTrue(
+            {node.layer for node in nodes.values()} <=
+            {"actors", "use_cases", "projections", "outbound_adapters"}
+        )
 
     def test_runtime_adapter_emits_queue_projection_from_shared_environment(self) -> None:
         result = SimulationRunner().run(create_simulation())
