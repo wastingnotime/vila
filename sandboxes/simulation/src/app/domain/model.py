@@ -247,7 +247,7 @@ class Environment:
         )
 
     def open_request(self, now: datetime, *, request_id: str, resident_id: str, category: str, description: str) -> Event:
-        self.require_resident(resident_id)
+        self._require_current_resident(resident_id, now)
         if not request_id.strip():
             raise ValueError("maintenance request identifier is required")
         if not category.strip() or not description.strip():
