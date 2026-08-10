@@ -136,6 +136,18 @@ class RuntimeScenarioTests(unittest.TestCase):
         names = [observation.name for observation in result.observations.observations]
         self.assertLess(names.index("resident_membership_closed"), names.index("resident_departure_history_ready"))
 
+    def test_runtime_adapter_emits_resident_rejoin_scope(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+        rejoined = [
+            observation
+            for observation in result.observations.observations
+            if observation.name == "resident_status_after_rejoin_ready"
+        ]
+
+        self.assertEqual(len(rejoined), 1)
+        self.assertEqual(rejoined[0].payload["unit_id"], "unit-103")
+        self.assertEqual(rejoined[0].payload["action_items"], ["overdue_payment"])
+
     def test_runtime_adapter_emits_shared_unit_status_notifications(self) -> None:
         result = SimulationRunner().run(create_simulation())
 

@@ -16,6 +16,7 @@ SUMMARY_AT = datetime(2026, 1, 6, 1, 0, tzinfo=timezone.utc)
 ANNOUNCEMENT_EXPIRATION_CHECK = datetime(2026, 1, 8, 1, 0, tzinfo=timezone.utc)
 RESIDENT_MOVE = datetime(2026, 1, 10, tzinfo=timezone.utc)
 RESIDENT_DEPARTURE = datetime(2026, 2, 10, tzinfo=timezone.utc)
+RESIDENT_REJOIN = datetime(2026, 2, 12, tzinfo=timezone.utc)
 
 
 def _run_slice(context: object) -> None:
@@ -324,6 +325,31 @@ def _resident_moves_unit(context: object) -> None:
         correlation_id="resident-1-move",
         payload={"from_unit_id": "unit-101", "to_unit_id": "unit-102"},
     )
+    environment.move_resident("resident-1", "unit-102", RESIDENT_MOVE)
+    context.emit(
+        "domain_event",
+        "resident_membership_changed",
+        source="MembershipAggregate",
+        actor="resident-1",
+        correlation_id="resident-1-move",
+        payload={"from_unit_id": "unit-101", "to_unit_id": "unit-102"},
+    )
+    summary = environment.status_summary("resident-1", RESIDENT_MOVE)
+    context.emit(
+        "projection",
+        "resident_status_after_move_ready",
+        source="StatusSummaryProjection",
+        actor="resident-1",
+        correlation_id="resident-1-move",
+        payload={
+            "action_items": list(summary.action_items),
+            "historical_request_ids": list(dict.fromkeys(
+                activity.subject_id
+                for activity in environment.activity_history("resident-1", RESIDENT_MOVE)
+                if activity.kind == "maintenance"
+            )),
+        },
+    )
 
 
 def _resident_leaves_condominium(context: object) -> None:
@@ -357,30 +383,35 @@ def _resident_leaves_condominium(context: object) -> None:
             "history_subject_ids": list(dict.fromkeys(activity.subject_id for activity in history)),
         },
     )
-    environment.move_resident("resident-1", "unit-102", RESIDENT_MOVE)
+
+
+def _resident_rejoins_condominium(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    context.emit(
+        "intention",
+        "rejoin_condominium",
+        source="ResidentActor",
+        actor="resident-1",
+        correlation_id="resident-1-rejoin",
+        payload={"unit_id": "unit-103"},
+    )
+    environment.rejoin_resident("resident-1", "unit-103", RESIDENT_REJOIN)
     context.emit(
         "domain_event",
-        "resident_membership_changed",
+        "resident_membership_started",
         source="MembershipAggregate",
         actor="resident-1",
-        correlation_id="resident-1-move",
-        payload={"from_unit_id": "unit-101", "to_unit_id": "unit-102"},
+        correlation_id="resident-1-rejoin",
+        payload={"unit_id": "unit-103"},
     )
-    summary = environment.status_summary("resident-1", RESIDENT_MOVE)
+    summary = environment.status_summary("resident-1", RESIDENT_REJOIN)
     context.emit(
         "projection",
-        "resident_status_after_move_ready",
+        "resident_status_after_rejoin_ready",
         source="StatusSummaryProjection",
         actor="resident-1",
-        correlation_id="resident-1-move",
-        payload={
-            "action_items": list(summary.action_items),
-            "historical_request_ids": list(dict.fromkeys(
-                activity.subject_id
-                for activity in environment.activity_history("resident-1", RESIDENT_MOVE)
-                if activity.kind == "maintenance"
-            )),
-        },
+        correlation_id="resident-1-rejoin",
+        payload={"action_items": list(summary.action_items), "unit_id": "unit-103"},
     )
 
 
@@ -547,6 +578,13 @@ def create_simulation() -> Scenario:
                 name="resident_leaves_condominium",
                 source="VilaSimulation",
                 correlation_id="resident-1-departure",
+            ),
+            InitialScheduledAction(
+                when=RESIDENT_REJOIN,
+                action=_resident_rejoins_condominium,
+                name="resident_rejoins_condominium",
+                source="VilaSimulation",
+                correlation_id="resident-1-rejoin",
             ),
             InitialScheduledAction(
                 when=PAYMENT_CONFIRMATION,

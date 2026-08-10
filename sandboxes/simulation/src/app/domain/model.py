@@ -275,6 +275,22 @@ class Environment:
         self.memberships.pop(resident_id, None)
         self.residents.discard(resident_id)
 
+    def rejoin_resident(self, resident_id: str, unit_id: str, at: datetime) -> None:
+        if self.roles.get(resident_id) != "resident":
+            raise PermissionError("only a resident can rejoin the condominium")
+        if unit_id not in self.units:
+            raise KeyError(f"unknown unit: {unit_id}")
+        try:
+            self.unit_for_resident(resident_id, at)
+        except KeyError:
+            self.membership_history.append(
+                MembershipPeriod(resident_id=resident_id, unit_id=unit_id, active_from=at)
+            )
+            self.memberships[resident_id] = unit_id
+            self.residents.add(resident_id)
+            return
+        raise ValueError("resident already has an active membership")
+
     def manager_status(self, now: datetime) -> list[str]:
         items = ["overdue_payment" for _ in self.overdue_payments(now)]
         items.extend(
