@@ -130,8 +130,11 @@ class RuntimeScenarioTests(unittest.TestCase):
         ]
 
         self.assertEqual(len(departure), 1)
+        self.assertEqual(departure[0].correlation_id, "resident-1-departure")
         self.assertFalse(departure[0].payload["current_access"])
         self.assertIn("request-1", departure[0].payload["history_subject_ids"])
+        names = [observation.name for observation in result.observations.observations]
+        self.assertLess(names.index("resident_membership_closed"), names.index("resident_departure_history_ready"))
 
     def test_runtime_adapter_emits_shared_unit_status_notifications(self) -> None:
         result = SimulationRunner().run(create_simulation())
