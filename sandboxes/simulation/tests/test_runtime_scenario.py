@@ -148,6 +148,33 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(rejoined[0].payload["unit_id"], "unit-103")
         self.assertEqual(rejoined[0].payload["action_items"], ["overdue_payment"])
 
+    def test_runtime_adapter_correlates_membership_lifecycle_events(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+        events = {
+            observation.name: observation
+            for observation in result.observations.observations
+            if observation.name in {
+                "resident_membership_changed",
+                "resident_membership_closed",
+                "resident_membership_started",
+            }
+        }
+
+        self.assertEqual(events["resident_membership_changed"].payload, {
+            "resident_id": "resident-1",
+            "from_unit_id": "unit-101",
+            "to_unit_id": "unit-102",
+        })
+        self.assertEqual(events["resident_membership_closed"].payload, {"resident_id": "resident-1"})
+        self.assertEqual(events["resident_membership_started"].payload, {
+            "resident_id": "resident-1",
+            "unit_id": "unit-103",
+        })
+        self.assertLess(
+            [observation.name for observation in result.observations.observations].index("resident_membership_closed"),
+            [observation.name for observation in result.observations.observations].index("resident_status_after_rejoin_ready"),
+        )
+
     def test_runtime_adapter_emits_shared_unit_status_notifications(self) -> None:
         result = SimulationRunner().run(create_simulation())
 
