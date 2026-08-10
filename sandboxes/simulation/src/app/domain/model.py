@@ -352,12 +352,19 @@ class Environment:
             raise ValueError("invitation and resident identifiers are required")
         if invitation_id in self.invitations:
             raise ValueError(f"invitation already exists: {invitation_id}")
+        if any(
+            invitation.resident_id == resident_id and invitation.status == "pending"
+            for invitation in self.invitations.values()
+        ):
+            raise ValueError("resident already has a pending invitation")
         if unit_id not in self.units:
             raise ValueError(f"unknown unit: {unit_id}")
         normalized_invited_at = invited_at.astimezone(timezone.utc)
         normalized_expires_at = expires_at.astimezone(timezone.utc)
         if normalized_expires_at <= normalized_invited_at:
             raise ValueError("invitation expiry must follow invitation time")
+        if self.has_current_access(resident_id, normalized_invited_at):
+            raise ValueError("resident already has current access")
         self.record(
             "invitation_created",
             normalized_invited_at,
