@@ -44,6 +44,13 @@ class ActivityHistoryTests(unittest.TestCase):
         self.assertTrue(any(item.subject_id == "request-1" for item in history))
         self.assertEqual(environment.resident_status("resident-1", MOVE_AT), ["overdue_payment"])
 
+    def test_unknown_activity_viewer_is_rejected(self) -> None:
+        environment, _, _ = run_activity_history_slice()
+        now = datetime(2026, 1, 8, tzinfo=timezone.utc)
+
+        with self.assertRaises(PermissionError):
+            environment.activity_history("unknown-user", now)
+
 
 if __name__ == "__main__":
     unittest.main()
