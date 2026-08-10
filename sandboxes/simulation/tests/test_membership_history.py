@@ -88,6 +88,13 @@ class MembershipHistoryTests(unittest.TestCase):
 
         self.assertNotIn("resident_rejoined", [event.name for event in environment.events])
 
+    def test_departed_resident_cannot_read_current_status(self) -> None:
+        environment = notification_fatigue_environment()
+        environment.leave_resident("resident-1", datetime(2026, 2, 10, tzinfo=timezone.utc))
+
+        with self.assertRaises(PermissionError):
+            environment.resident_status("resident-1", datetime(2026, 2, 12, tzinfo=timezone.utc))
+
 
 if __name__ == "__main__":
     unittest.main()
