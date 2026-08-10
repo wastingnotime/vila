@@ -77,6 +77,20 @@ class PermissionTests(unittest.TestCase):
 
         self.assertEqual(environment.events, [])
 
+    def test_unknown_maintenance_reference_is_rejected_as_domain_error(self) -> None:
+        environment = notification_fatigue_environment()
+        now = datetime(2026, 1, 8, tzinfo=timezone.utc)
+
+        with self.assertRaises(ValueError):
+            environment.change_request_status(
+                now,
+                request_id="missing-request",
+                manager_id="manager-1",
+                next_status="under_review",
+            )
+
+        self.assertEqual(environment.events, [])
+
     def test_manager_cannot_submit_a_resident_request(self) -> None:
         environment = notification_fatigue_environment()
         now = datetime(2026, 1, 6, tzinfo=timezone.utc)
