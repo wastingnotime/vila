@@ -69,6 +69,25 @@ class AnnouncementTests(unittest.TestCase):
 
         self.assertEqual(len(environment.announcements), 2)
 
+    def test_announcement_requires_title_and_body(self) -> None:
+        environment, _ = run_announcement_slice()
+
+        for announcement_id, title, body in (
+            ("announcement-empty-title", " ", "A useful notice."),
+            ("announcement-empty-body", "Notice", ""),
+        ):
+            with self.assertRaises(ValueError):
+                environment.publish_announcement(
+                    announcement_id,
+                    title,
+                    body,
+                    "normal",
+                    NOW,
+                    published_by="manager-1",
+                )
+
+        self.assertEqual(len(environment.announcements), 2)
+
 
 if __name__ == "__main__":
     unittest.main()
