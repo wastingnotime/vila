@@ -1,4 +1,5 @@
 import unittest
+from datetime import timedelta
 
 from app.simulation.notification_fatigue import NOW, run_notification_fatigue_slice
 
@@ -29,6 +30,23 @@ class NotificationFatigueTests(unittest.TestCase):
             environment.resident_status("resident-1b", NOW),
             ["overdue_payment", "maintenance_request"],
         )
+
+    def test_future_request_does_not_trigger_early_manager_notification(self) -> None:
+        environment, _ = run_notification_fatigue_slice()
+        future = NOW + timedelta(days=1)
+        environment.open_request(
+            future,
+            request_id="future-request",
+            resident_id="resident-1",
+            category="plumbing",
+            description="Not submitted yet in the current window.",
+        )
+        environment.notifications.clear()
+
+        notifications = environment.actionable_notifications("manager-1", NOW)
+
+        self.assertEqual(len(notifications), 1)
+        self.assertEqual(notifications[0].item_count, 1)
 
 
 if __name__ == "__main__":
