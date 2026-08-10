@@ -53,7 +53,7 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(len(notifications), 1)
         self.assertEqual(
             notifications[0].payload["notifications"],
-            [{"kind": "maintenance_review_required", "item_count": 1}],
+            [{"kind": "maintenance_review_required", "item_count": 1, "item_ids": ["request-1"]}],
         )
 
     def test_runtime_adapter_traces_manager_status_inputs(self) -> None:
