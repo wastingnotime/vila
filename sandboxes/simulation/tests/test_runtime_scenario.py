@@ -229,6 +229,7 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(confirmations[0].payload["payment_index"], 0)
         self.assertEqual(confirmations[0].payload["status"], "paid")
         self.assertEqual(confirmations[0].payload["paid_at"], "2026-01-08T00:00:00+00:00")
+        self.assertEqual(confirmations[0].payload["confirmed_by"], "manager-1")
         payment_events = [
             observation
             for observation in result.observations.observations
