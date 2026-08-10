@@ -325,7 +325,7 @@ class Environment:
 
     def move_resident(self, resident_id: str, new_unit_id: str, at: datetime) -> None:
         if new_unit_id not in self.units:
-            raise KeyError(f"unknown unit: {new_unit_id}")
+            raise ValueError(f"unknown unit: {new_unit_id}")
         old_unit_id = self.unit_for_resident(resident_id, at)
         if old_unit_id == new_unit_id:
             raise ValueError("resident is already assigned to that unit")
