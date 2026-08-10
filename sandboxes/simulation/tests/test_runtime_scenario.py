@@ -117,6 +117,7 @@ class RuntimeScenarioTests(unittest.TestCase):
         ]
 
         self.assertEqual(len(moved), 1)
+        self.assertEqual(moved[0].correlation_id, "resident-1-move")
         self.assertEqual(moved[0].payload["action_items"], ["overdue_payment"])
         self.assertEqual(moved[0].payload["historical_request_ids"], ["request-1"])
 
