@@ -558,6 +558,7 @@ class Environment:
                     kind="maintenance_review_required",
                     item_count=len(pending_requests),
                     at=now.astimezone(timezone.utc),
+                    item_ids=tuple(sorted(request.request_id for request in pending_requests)),
                 )
                 self.notifications.append(notification)
                 notifications.append(notification)
