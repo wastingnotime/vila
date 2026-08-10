@@ -237,6 +237,12 @@ def _resident_collects_delivery(context: object) -> None:
                 and event.payload.get("delivery_id") == "delivery-1"
                 for event in environment.events
             ),
+            "collected_by": next(
+                event.payload["collected_by"]
+                for event in environment.events
+                if event.name == "delivery_collected"
+                and event.payload.get("delivery_id") == "delivery-1"
+            ),
         },
     )
 
