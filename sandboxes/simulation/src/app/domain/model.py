@@ -254,6 +254,9 @@ class Environment:
         if self.roles.get(manager_id) != "building_manager":
             raise PermissionError("only a building manager can perform this action")
 
+    def _is_manager(self, viewer_id: str) -> bool:
+        return self.roles.get(viewer_id) == "building_manager"
+
     def resident_status(self, resident_id: str, now: datetime) -> list[str]:
         unit_id = self.unit_for_resident(resident_id, now)
         items = ["overdue_payment" for payment in self.overdue_payments(now) if payment.unit_id == unit_id]
@@ -386,7 +389,7 @@ class Environment:
         return delivery
 
     def open_deliveries(self, viewer_id: str, at: datetime) -> list[Delivery]:
-        if viewer_id == "manager-1":
+        if self._is_manager(viewer_id):
             visible_units = set(self.units)
         else:
             visible_units = {self.unit_for_resident(viewer_id, at)}
@@ -403,7 +406,7 @@ class Environment:
         )
 
     def status_summary(self, viewer_id: str, at: datetime) -> StatusSummary:
-        if viewer_id == "manager-1":
+        if self._is_manager(viewer_id):
             action_items = self.manager_status(at)
         else:
             action_items = self.resident_status(viewer_id, at)
@@ -429,7 +432,7 @@ class Environment:
     def activity_history(self, viewer_id: str, now: datetime) -> list[ActivityItem]:
         """Build a small user-facing history, not a raw technical event log."""
         self.overdue_payments(now)
-        is_manager = viewer_id == "manager-1"
+        is_manager = self._is_manager(viewer_id)
         if is_manager:
             viewer_units: set[str] | None = None
         elif self.membership_history:
@@ -484,7 +487,7 @@ class Environment:
             for request in self.requests.values()
             if request.status == "submitted"
         ]
-        if recipient_id == "manager-1" and pending_requests:
+        if self._is_manager(recipient_id) and pending_requests:
             already_sent = any(
                 notification.recipient_id == recipient_id
                 and notification.kind == "maintenance_review_required"
