@@ -1,4 +1,5 @@
 import unittest
+from datetime import timedelta
 
 from app.simulation.maintenance_notifications import run_maintenance_notification_slice
 
@@ -39,6 +40,27 @@ class MaintenanceNotificationTests(unittest.TestCase):
         self.assertEqual(len(environment.notifications), 2)
         self.assertEqual(environment.notifications[0].item_count, 2)
         self.assertEqual(environment.notifications[0].item_ids, ("request-1", "request-2"))
+
+    def test_future_status_change_is_not_notified_early(self) -> None:
+        environment, _ = run_maintenance_notification_slice()
+        now = environment.notifications[0].at
+        future = now + timedelta(days=1)
+        environment.open_request(
+            future,
+            request_id="request-2",
+            resident_id="resident-1",
+            category="electrical",
+            description="Future issue",
+        )
+        environment.change_request_status(
+            future,
+            request_id="request-2",
+            manager_id="manager-1",
+            next_status="under_review",
+        )
+        environment.notifications.clear()
+
+        self.assertEqual(environment.maintenance_status_notifications("request-2", now), [])
 
 
 if __name__ == "__main__":
