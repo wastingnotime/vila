@@ -95,6 +95,25 @@ class SimulationModelTests(unittest.TestCase):
 
         self.assertEqual(environment.requests["request-1"].status, "submitted")
 
+    def test_maintenance_request_requires_category_and_description(self) -> None:
+        environment = seeded_environment()
+        now = datetime(2026, 1, 6, tzinfo=timezone.utc)
+
+        for request_id, category, description in (
+            ("request-empty-category", "", "Low water pressure"),
+            ("request-empty-description", "plumbing", ""),
+        ):
+            with self.assertRaises(ValueError):
+                environment.open_request(
+                    now,
+                    request_id=request_id,
+                    resident_id="resident-1",
+                    category=category,
+                    description=description,
+                )
+
+        self.assertEqual(environment.requests, {})
+
     def test_event_history_rebuilds_the_same_projection(self) -> None:
         environment = seeded_environment()
         now = datetime(2026, 1, 6, tzinfo=timezone.utc)
