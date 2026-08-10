@@ -148,7 +148,11 @@ def _emit_composed_status_summary(context: object) -> None:
         actor="manager-1",
         payload={
             "notifications": [
-                {"kind": notification.kind, "item_count": notification.item_count}
+                {
+                    "kind": notification.kind,
+                    "item_count": notification.item_count,
+                    "item_ids": list(notification.item_ids),
+                }
                 for notification in notifications
             ]
         },
