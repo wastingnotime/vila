@@ -128,5 +128,23 @@ class OnboardingTests(unittest.TestCase):
 
         self.assertEqual(environment.invitations["invite-owned"].status, "pending")
 
+    def test_rejected_onboarding_is_replayable_without_access(self) -> None:
+        environment = notification_fatigue_environment()
+        rejected_at = START + timedelta(days=1)
+        environment.invite_resident(
+            "invite-reject-replay",
+            "new-resident",
+            "unit-102",
+            START,
+            START + timedelta(days=7),
+            invited_by="manager-1",
+        )
+        environment.reject_invitation("invite-reject-replay", "new-resident", rejected_at)
+
+        replayed = environment.from_history(notification_fatigue_environment(), environment.events)
+
+        self.assertEqual(replayed.invitations["invite-reject-replay"].status, "rejected")
+        self.assertFalse(replayed.has_current_access("new-resident", rejected_at))
+
 if __name__ == "__main__":
     unittest.main()
