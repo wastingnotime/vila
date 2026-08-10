@@ -26,6 +26,27 @@ ONBOARDING_ACCEPT = datetime(2026, 1, 2, tzinfo=timezone.utc)
 ONBOARDING_REJECTION = datetime(2026, 1, 3, tzinfo=timezone.utc)
 
 
+def _observatory_target(name: str) -> str:
+    normalized = name.lower()
+    if "notification" in normalized:
+        return "resident-notifications"
+    if "invitation" in normalized or "onboarding" in normalized or "membership" in normalized:
+        return "onboarding-flow"
+    if any(term in normalized for term in ("move_resident", "leave_condominium", "rejoin_condominium")):
+        return "onboarding-flow"
+    if "delivery" in normalized:
+        return "delivery-flow"
+    if "payment" in normalized or "obligation" in normalized:
+        return "payment-flow"
+    if "announcement" in normalized:
+        return "announcement-flow"
+    if "maintenance" in normalized or "attention_queue" in normalized:
+        return "maintenance-queue"
+    if "activity" in normalized or "departure_history" in normalized:
+        return "activity-history"
+    return "status-summary"
+
+
 def _run_slice(context: object) -> None:
     environment: Environment = context.environment  # type: ignore[attr-defined]
     context.emit("intention", "review_status", actor="resident-1", payload={"scope": "home"})
@@ -640,6 +661,29 @@ def create_simulation() -> Scenario:
 
     def attach_environment(context: object) -> None:
         context.environment = environment  # type: ignore[attr-defined]
+        original_emit = context.emit  # type: ignore[attr-defined]
+
+        def emit_with_graph_target(
+            event_type: str,
+            name: str,
+            *,
+            source: str | None = None,
+            actor: str | None = None,
+            correlation_id: str | None = None,
+            payload: dict[str, object] | None = None,
+        ) -> object:
+            graph_payload = dict(payload or {})
+            graph_payload.setdefault("use_case_id", _observatory_target(name))
+            return original_emit(
+                event_type,
+                name,
+                source=source,
+                actor=actor,
+                correlation_id=correlation_id,
+                payload=graph_payload,
+            )
+
+        context.emit = emit_with_graph_target  # type: ignore[attr-defined]
 
     class ResidentActor:
         def on_start(self, context: object) -> None:
@@ -769,7 +813,6 @@ def create_simulation() -> Scenario:
             ObservatoryNode("onboarding-flow", "Onboarding flow", "use_case", "use_cases", domain="onboarding"),
             ObservatoryNode("resident-notifications", "Resident notifications", "notification", "events"),
             ObservatoryNode("activity-history", "Activity history", "projection", "projections"),
-            ObservatoryNode("ObservationLog", "Observation log", "projection", "projections"),
         ],
         observatory_edges=[
             ObservatoryEdge("resident-1", "status-summary", "reads"),

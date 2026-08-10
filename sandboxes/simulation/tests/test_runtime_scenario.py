@@ -26,7 +26,6 @@ class RuntimeScenarioTests(unittest.TestCase):
                 "onboarding-flow",
                 "resident-notifications",
                 "activity-history",
-                "ObservationLog",
             },
         )
         self.assertIn(("resident-1", "status-summary"), edges)
@@ -50,7 +49,6 @@ class RuntimeScenarioTests(unittest.TestCase):
             {node.layer for node in nodes.values()} <=
             {"actors", "use_cases", "events", "projections", "outbound_adapters"}
         )
-        self.assertIn("ObservationLog", nodes)
 
     def test_runtime_observations_resolve_declared_beam_endpoints(self) -> None:
         scenario = create_simulation()
@@ -65,7 +63,15 @@ class RuntimeScenarioTests(unittest.TestCase):
         }
 
         self.assertTrue(renderable_actors <= node_ids)
-        self.assertIn("ObservationLog", node_ids)
+        renderable_targets = {
+            observation.payload.get("use_case_id")
+            for observation in result.observations.observations
+            if observation.actor
+            and observation.type not in {"scheduled_action_started", "scenario_started", "scenario_finished"}
+            and "invariant" not in observation.type
+        }
+        self.assertNotIn(None, renderable_targets)
+        self.assertTrue(renderable_targets <= node_ids)
 
     def test_runtime_adapter_emits_onboarding_access_evidence(self) -> None:
         result = SimulationRunner().run(create_simulation())
@@ -77,7 +83,10 @@ class RuntimeScenarioTests(unittest.TestCase):
 
         self.assertEqual(len(ready), 1)
         self.assertEqual(ready[0].actor, "resident-new")
-        self.assertEqual(ready[0].payload, {"unit_id": "unit-103", "current_access": True})
+        self.assertEqual(
+            ready[0].payload,
+            {"unit_id": "unit-103", "current_access": True, "use_case_id": "onboarding-flow"},
+        )
 
     def test_runtime_adapter_emits_onboarding_rejection_evidence(self) -> None:
         result = SimulationRunner().run(create_simulation())
@@ -91,7 +100,12 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(rejected[0].actor, "resident-declined")
         self.assertEqual(
             rejected[0].payload,
-            {"invitation_id": "invite-declined", "status": "rejected", "current_access": False},
+            {
+                "invitation_id": "invite-declined",
+                "status": "rejected",
+                "current_access": False,
+                "use_case_id": "onboarding-flow",
+            },
         )
 
     def test_runtime_adapter_emits_queue_projection_from_shared_environment(self) -> None:
@@ -177,7 +191,15 @@ class RuntimeScenarioTests(unittest.TestCase):
 
         self.assertEqual(len(empty), 1)
         self.assertEqual(empty[0].correlation_id, "empty-summary-1")
-        self.assertEqual(empty[0].payload, {"action_items": [], "latest_update": None, "open_delivery_ids": []})
+        self.assertEqual(
+            empty[0].payload,
+            {
+                "action_items": [],
+                "latest_update": None,
+                "open_delivery_ids": [],
+                "use_case_id": "status-summary",
+            },
+        )
 
         invariant_results = [
             observation.payload["passed"]
@@ -197,7 +219,14 @@ class RuntimeScenarioTests(unittest.TestCase):
 
         self.assertEqual(len(closed), 1)
         self.assertEqual(closed[0].correlation_id, "announcement-1")
-        self.assertEqual(closed[0].payload, {"active_ids": [], "retained_ids": ["announcement-1"]})
+        self.assertEqual(
+            closed[0].payload,
+            {
+                "active_ids": [],
+                "retained_ids": ["announcement-1"],
+                "use_case_id": "announcement-flow",
+            },
+        )
 
     def test_runtime_adapter_emits_resident_movement_scope(self) -> None:
         result = SimulationRunner().run(create_simulation())
@@ -259,11 +288,16 @@ class RuntimeScenarioTests(unittest.TestCase):
             "resident_id": "resident-1",
             "from_unit_id": "unit-101",
             "to_unit_id": "unit-102",
+            "use_case_id": "onboarding-flow",
         })
-        self.assertEqual(events["resident_membership_closed"].payload, {"resident_id": "resident-1"})
+        self.assertEqual(
+            events["resident_membership_closed"].payload,
+            {"resident_id": "resident-1", "use_case_id": "onboarding-flow"},
+        )
         self.assertEqual(events["resident_membership_started"].payload, {
             "resident_id": "resident-1",
             "unit_id": "unit-103",
+            "use_case_id": "onboarding-flow",
         })
         self.assertLess(
             [observation.name for observation in result.observations.observations].index("resident_membership_closed"),
