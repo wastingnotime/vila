@@ -1,6 +1,6 @@
 import unittest
 
-from app.domain.model import Delivery
+from app.domain.model import Delivery, notification_fatigue_environment
 from app.simulation.deliveries import run_delivery_slice
 from app.simulation.notification_fatigue import NOW
 
@@ -63,6 +63,15 @@ class DeliveryTests(unittest.TestCase):
             environment.collect_delivery("future-1", "resident-1", NOW)
 
         self.assertEqual(environment.deliveries["future-1"].status, "waiting")
+
+    def test_delivery_collection_is_replayable(self) -> None:
+        environment, _ = run_delivery_slice()
+        environment.collect_delivery("delivery-1", "resident-1", NOW)
+
+        rebuilt = environment.from_history(notification_fatigue_environment(), environment.events)
+
+        self.assertEqual(rebuilt.deliveries["delivery-1"].status, "collected")
+        self.assertEqual(rebuilt.deliveries["delivery-1"].collected_at, NOW)
 
 
 if __name__ == "__main__":
