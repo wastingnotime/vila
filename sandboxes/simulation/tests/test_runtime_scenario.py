@@ -73,8 +73,10 @@ class RuntimeScenarioTests(unittest.TestCase):
         }
         self.assertEqual(events["delivery_received"].correlation_id, "delivery-1")
         self.assertEqual(events["delivery_received"].payload["delivery_id"], "delivery-1")
+        self.assertEqual(events["delivery_received"].payload["recorded_by"], "manager-1")
         self.assertEqual(events["announcement_published"].correlation_id, "announcement-1")
         self.assertEqual(events["announcement_published"].payload["announcement_id"], "announcement-1")
+        self.assertEqual(events["announcement_published"].payload["published_by"], "manager-1")
 
     def test_runtime_adapter_emits_explicit_empty_state(self) -> None:
         result = SimulationRunner().run(create_simulation())
