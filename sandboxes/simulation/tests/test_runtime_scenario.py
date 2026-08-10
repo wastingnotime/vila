@@ -20,6 +20,7 @@ class RuntimeScenarioTests(unittest.TestCase):
                 "delivery-flow",
                 "payment-flow",
                 "announcement-flow",
+                "onboarding-flow",
                 "resident-notifications",
                 "activity-history",
             },
@@ -29,6 +30,7 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertIn(("maintenance-queue", "resident-notifications"), edges)
         self.assertIn(("payment-flow", "activity-history"), edges)
         self.assertIn(("delivery-flow", "status-summary"), edges)
+        self.assertIn(("manager-actor", "onboarding-flow"), edges)
         self.assertEqual(nodes["status-summary"].layer, "projections")
         self.assertEqual(nodes["resident-notifications"].kind, "notification")
         self.assertEqual(nodes["resident-notifications"].layer, "events")
@@ -37,13 +39,25 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertIsNone(nodes["status-summary"].domain)
         self.assertEqual(
             {node.domain for node in nodes.values() if node.domain},
-            {"maintenance", "delivery", "payment", "announcement"},
+            {"maintenance", "delivery", "payment", "announcement", "onboarding"},
         )
         self.assertTrue(all(edge.from_node in nodes and edge.to_node in nodes for edge in scenario.observatory_edges))
         self.assertTrue(
             {node.layer for node in nodes.values()} <=
             {"actors", "use_cases", "events", "projections", "outbound_adapters"}
         )
+
+    def test_runtime_adapter_emits_onboarding_access_evidence(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+        ready = [
+            observation
+            for observation in result.observations.observations
+            if observation.name == "resident_onboarding_ready"
+        ]
+
+        self.assertEqual(len(ready), 1)
+        self.assertEqual(ready[0].actor, "resident-new")
+        self.assertEqual(ready[0].payload, {"unit_id": "unit-103", "current_access": True})
 
     def test_runtime_adapter_emits_queue_projection_from_shared_environment(self) -> None:
         result = SimulationRunner().run(create_simulation())
