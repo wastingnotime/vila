@@ -481,6 +481,8 @@ class Environment:
         )
 
     def collect_delivery(self, delivery_id: str, viewer_id: str, at: datetime) -> None:
+        if delivery_id not in self.deliveries:
+            raise ValueError(f"unknown delivery: {delivery_id}")
         delivery = self.deliveries[delivery_id]
         if at.astimezone(timezone.utc) < delivery.received_at:
             raise ValueError("delivery cannot be collected before it is received")
