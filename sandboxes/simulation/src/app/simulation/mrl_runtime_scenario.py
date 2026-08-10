@@ -411,7 +411,15 @@ def _resident_rejoins_condominium(context: object) -> None:
         source="StatusSummaryProjection",
         actor="resident-1",
         correlation_id="resident-1-rejoin",
-        payload={"action_items": list(summary.action_items), "unit_id": "unit-103"},
+        payload={
+            "action_items": list(summary.action_items),
+            "unit_id": "unit-103",
+            "historical_unit_ids": [
+                membership.unit_id
+                for membership in environment.membership_history
+                if membership.resident_id == "resident-1"
+            ],
+        },
     )
 
 
