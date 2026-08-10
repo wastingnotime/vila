@@ -73,6 +73,20 @@ class DeliveryTests(unittest.TestCase):
         self.assertEqual(rebuilt.deliveries["delivery-1"].status, "collected")
         self.assertEqual(rebuilt.deliveries["delivery-1"].collected_at, NOW)
 
+    def test_delivery_requires_description(self) -> None:
+        environment, _ = run_delivery_slice()
+
+        with self.assertRaises(ValueError):
+            environment.record_delivery(
+                "empty-description",
+                "unit-101",
+                " ",
+                NOW,
+                recorded_by="manager-1",
+            )
+
+        self.assertNotIn("empty-description", environment.deliveries)
+
 
 if __name__ == "__main__":
     unittest.main()
