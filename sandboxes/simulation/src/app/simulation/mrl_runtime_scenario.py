@@ -259,7 +259,7 @@ def _manager_confirms_payment(context: object) -> None:
         source="ManagerActor",
         actor="manager-1",
         correlation_id="payment-0",
-        payload={"payment_index": 0},
+        payload={"payment_index": 0, "confirmed_by": "manager-1"},
     )
     context.emit(
         "command",
@@ -267,7 +267,7 @@ def _manager_confirms_payment(context: object) -> None:
         source="PaymentUseCase",
         actor="manager-1",
         correlation_id="payment-0",
-        payload={"payment_index": 0},
+        payload={"payment_index": 0, "confirmed_by": "manager-1"},
     )
     environment.mark_payment_paid(0, PAYMENT_CONFIRMATION, confirmed_by="manager-1")
     context.emit(
@@ -276,7 +276,7 @@ def _manager_confirms_payment(context: object) -> None:
         source="PaymentAggregate",
         actor="manager-1",
         correlation_id="payment-0",
-        payload={"payment_index": 0},
+        payload={"payment_index": 0, "confirmed_by": "manager-1"},
     )
     context.emit(
         "projection",
