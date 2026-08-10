@@ -82,7 +82,7 @@ def _emit_composed_status_summary(context: object) -> None:
         source="DeliveryAggregate",
         actor="manager-1",
         correlation_id="delivery-1",
-        payload={"delivery_id": "delivery-1"},
+        payload={"delivery_id": "delivery-1", "recorded_by": "manager-1"},
     )
     context.emit(
         "intention",
@@ -90,7 +90,7 @@ def _emit_composed_status_summary(context: object) -> None:
         source="ManagerActor",
         actor="manager-1",
         correlation_id="announcement-1",
-        payload={"announcement_id": "announcement-1"},
+        payload={"announcement_id": "announcement-1", "published_by": "manager-1"},
     )
     environment.publish_announcement(
         "announcement-1",
@@ -107,7 +107,7 @@ def _emit_composed_status_summary(context: object) -> None:
         source="AnnouncementAggregate",
         actor="manager-1",
         correlation_id="announcement-1",
-        payload={"announcement_id": "announcement-1"},
+        payload={"announcement_id": "announcement-1", "published_by": "manager-1"},
     )
     for viewer_id in ("resident-1", "manager-1"):
         summary = environment.status_summary(viewer_id, SUMMARY_AT)
