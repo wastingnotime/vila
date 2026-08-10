@@ -91,6 +91,22 @@ class PermissionTests(unittest.TestCase):
 
         self.assertEqual(environment.events, [])
 
+    def test_departed_resident_cannot_open_a_current_request(self) -> None:
+        environment = notification_fatigue_environment()
+        departed_at = datetime(2026, 2, 10, tzinfo=timezone.utc)
+        environment.leave_resident("resident-1", departed_at)
+
+        with self.assertRaises(PermissionError):
+            environment.open_request(
+                datetime(2026, 2, 12, tzinfo=timezone.utc),
+                request_id="request-after-departure",
+                resident_id="resident-1",
+                category="plumbing",
+                description="No current access",
+            )
+
+        self.assertNotIn("request-after-departure", environment.requests)
+
     def test_manager_cannot_submit_a_resident_request(self) -> None:
         environment = notification_fatigue_environment()
         now = datetime(2026, 1, 6, tzinfo=timezone.utc)
