@@ -53,6 +53,22 @@ class AnnouncementTests(unittest.TestCase):
 
         self.assertEqual(environment.announcements[0].title, "Water maintenance")
 
+    def test_announcement_expiry_cannot_precede_publication(self) -> None:
+        environment, _ = run_announcement_slice()
+
+        with self.assertRaises(ValueError):
+            environment.publish_announcement(
+                "announcement-3",
+                "Invalid window",
+                "Not visible.",
+                "normal",
+                NOW,
+                NOW.replace(day=2),
+                published_by="manager-1",
+            )
+
+        self.assertEqual(len(environment.announcements), 2)
+
 
 if __name__ == "__main__":
     unittest.main()
