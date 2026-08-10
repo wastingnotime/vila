@@ -504,7 +504,7 @@ def _run_queue_observation(context: object) -> None:
 
 def _status_has_actionable_items(context: object) -> bool:
     environment: Environment = context.environment  # type: ignore[attr-defined]
-    if context.clock.now() < ADVANCE:  # type: ignore[attr-defined]
+    if context.clock.now() < ADVANCE or context.clock.now() >= RESIDENT_DEPARTURE:  # type: ignore[attr-defined]
         return True
     return environment.resident_status("resident-1", ADVANCE) == ["overdue_payment", "maintenance_request"]
 
