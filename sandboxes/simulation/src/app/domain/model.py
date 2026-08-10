@@ -235,7 +235,12 @@ class Environment:
             raise ValueError("cancelled payment cannot be paid")
         payment.status = "paid"
         payment.paid_at = at.astimezone(timezone.utc)
-        self.record("payment_paid", payment.paid_at, payment_index=str(payment_index))
+        self.record(
+            "payment_paid",
+            payment.paid_at,
+            payment_index=str(payment_index),
+            confirmed_by=confirmed_by or "",
+        )
 
     def open_request(self, now: datetime, *, request_id: str, resident_id: str, category: str, description: str) -> Event:
         self.require_resident(resident_id)
