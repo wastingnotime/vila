@@ -31,6 +31,8 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertIn(("delivery-flow", "status-summary"), edges)
         self.assertEqual(nodes["status-summary"].layer, "projections")
         self.assertEqual(nodes["resident-notifications"].kind, "notification")
+        self.assertEqual(nodes["resident-notifications"].layer, "events")
+        self.assertNotEqual(nodes["resident-notifications"].layer, nodes["status-summary"].layer)
         self.assertIsNone(nodes["resident-actor"].realm)
         self.assertIsNone(nodes["status-summary"].domain)
         self.assertEqual(
@@ -40,7 +42,7 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertTrue(all(edge.from_node in nodes and edge.to_node in nodes for edge in scenario.observatory_edges))
         self.assertTrue(
             {node.layer for node in nodes.values()} <=
-            {"actors", "use_cases", "projections", "outbound_adapters"}
+            {"actors", "use_cases", "events", "projections", "outbound_adapters"}
         )
 
     def test_runtime_adapter_emits_queue_projection_from_shared_environment(self) -> None:

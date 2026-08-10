@@ -7,3 +7,6 @@ and activity projections.
 Actors and cross-domain projections remain shared in filtered views, while
 domain flows use renderer-supported layers so structural beams retain visible
 endpoints and depth.
+
+Notifications use a separate event lane from projections to avoid visual
+overlap in the all-domains graph.

@@ -642,7 +642,7 @@ def create_simulation() -> Scenario:
             ObservatoryNode("delivery-flow", "Delivery flow", "use_case", "use_cases", domain="delivery"),
             ObservatoryNode("payment-flow", "Payment flow", "use_case", "use_cases", domain="payment"),
             ObservatoryNode("announcement-flow", "Announcement flow", "use_case", "use_cases", domain="announcement"),
-            ObservatoryNode("resident-notifications", "Resident notifications", "notification", "outbound_adapters"),
+            ObservatoryNode("resident-notifications", "Resident notifications", "notification", "events"),
             ObservatoryNode("activity-history", "Activity history", "projection", "projections"),
         ],
         observatory_edges=[
