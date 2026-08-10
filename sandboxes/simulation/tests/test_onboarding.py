@@ -80,6 +80,37 @@ class OnboardingTests(unittest.TestCase):
         self.assertEqual(replayed.invitations["invite-replay"].status, "accepted")
         self.assertEqual(replayed.membership_history[-1].active_from, accepted_at)
 
+    def test_resident_cannot_have_two_active_onboarding_paths(self) -> None:
+        environment = notification_fatigue_environment()
+        environment.invite_resident(
+            "invite-pending",
+            "new-resident",
+            "unit-102",
+            START,
+            START + timedelta(days=7),
+            invited_by="manager-1",
+        )
+
+        with self.assertRaises(ValueError):
+            environment.invite_resident(
+                "invite-second",
+                "new-resident",
+                "unit-103",
+                START,
+                START + timedelta(days=7),
+                invited_by="manager-1",
+            )
+
+        with self.assertRaises(ValueError):
+            environment.invite_resident(
+                "invite-existing",
+                "resident-1",
+                "unit-102",
+                START,
+                START + timedelta(days=7),
+                invited_by="manager-1",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
