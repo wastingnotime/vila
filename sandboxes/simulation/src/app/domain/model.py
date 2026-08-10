@@ -342,14 +342,18 @@ class Environment:
             for announcement in self.announcements
         ):
             raise ValueError(f"announcement already exists: {announcement_id}")
+        normalized_published_at = published_at.astimezone(timezone.utc)
+        normalized_expires_at = expires_at.astimezone(timezone.utc) if expires_at else None
+        if normalized_expires_at is not None and normalized_expires_at <= normalized_published_at:
+            raise ValueError("announcement expiry must follow publication")
         announcement = Announcement(
             condominium_id=self.condominium_id,
             announcement_id=announcement_id,
             title=title,
             body=body,
             priority=priority,
-            published_at=published_at.astimezone(timezone.utc),
-            expires_at=expires_at.astimezone(timezone.utc) if expires_at else None,
+            published_at=normalized_published_at,
+            expires_at=normalized_expires_at,
         )
         self.announcements.append(announcement)
         return announcement
