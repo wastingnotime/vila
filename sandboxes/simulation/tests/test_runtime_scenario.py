@@ -5,6 +5,33 @@ from mrl_simulation_runtime.runner import SimulationRunner
 
 
 class RuntimeScenarioTests(unittest.TestCase):
+    def test_runtime_adapter_exposes_a_shared_domain_observatory_graph(self) -> None:
+        scenario = create_simulation()
+        nodes = {node.id: node for node in scenario.observatory_nodes}
+        edges = {(edge.from_node, edge.to_node) for edge in scenario.observatory_edges}
+
+        self.assertEqual(
+            set(nodes),
+            {
+                "resident-actor",
+                "manager-actor",
+                "status-summary",
+                "maintenance-queue",
+                "delivery-flow",
+                "payment-flow",
+                "announcement-flow",
+                "resident-notifications",
+                "activity-history",
+            },
+        )
+        self.assertIn(("resident-actor", "status-summary"), edges)
+        self.assertIn(("manager-actor", "maintenance-queue"), edges)
+        self.assertIn(("maintenance-queue", "resident-notifications"), edges)
+        self.assertIn(("payment-flow", "activity-history"), edges)
+        self.assertIn(("delivery-flow", "status-summary"), edges)
+        self.assertEqual(nodes["status-summary"].layer, "projection")
+        self.assertEqual(nodes["resident-notifications"].kind, "notification")
+
     def test_runtime_adapter_emits_queue_projection_from_shared_environment(self) -> None:
         result = SimulationRunner().run(create_simulation())
 

@@ -2,7 +2,12 @@ from datetime import datetime, timezone
 
 from mrl_simulation_runtime.actors import Actor
 from mrl_simulation_runtime.invariants import Invariant
-from mrl_simulation_runtime.scenario import InitialScheduledAction, Scenario
+from mrl_simulation_runtime.scenario import (
+    InitialScheduledAction,
+    ObservatoryEdge,
+    ObservatoryNode,
+    Scenario,
+)
 
 from app.domain.model import Environment, notification_fatigue_environment
 
@@ -628,5 +633,27 @@ def create_simulation() -> Scenario:
         invariants=[
             Invariant(name="status_has_actionable_items", check=_status_has_actionable_items),
             Invariant(name="summary_scope_is_temporal_and_tenant_scoped", check=_summary_scope_is_temporal_and_tenant_scoped),
+        ],
+        observatory_nodes=[
+            ObservatoryNode("resident-actor", "Resident", "actor", "actor", realm="condominium"),
+            ObservatoryNode("manager-actor", "Building manager", "actor", "actor", realm="condominium"),
+            ObservatoryNode("status-summary", "Status summary", "projection", "projection", domain="status"),
+            ObservatoryNode("maintenance-queue", "Maintenance queue", "projection", "projection", domain="maintenance"),
+            ObservatoryNode("delivery-flow", "Delivery flow", "use_case", "application", domain="delivery"),
+            ObservatoryNode("payment-flow", "Payment flow", "use_case", "application", domain="payment"),
+            ObservatoryNode("announcement-flow", "Announcement flow", "use_case", "application", domain="announcement"),
+            ObservatoryNode("resident-notifications", "Resident notifications", "notification", "integration", domain="maintenance"),
+            ObservatoryNode("activity-history", "Activity history", "projection", "projection", domain="activity"),
+        ],
+        observatory_edges=[
+            ObservatoryEdge("resident-actor", "status-summary", "reads"),
+            ObservatoryEdge("manager-actor", "maintenance-queue", "reviews"),
+            ObservatoryEdge("manager-actor", "payment-flow", "confirms"),
+            ObservatoryEdge("manager-actor", "announcement-flow", "publishes"),
+            ObservatoryEdge("resident-actor", "delivery-flow", "collects"),
+            ObservatoryEdge("maintenance-queue", "resident-notifications", "notifies"),
+            ObservatoryEdge("payment-flow", "activity-history", "records"),
+            ObservatoryEdge("delivery-flow", "status-summary", "updates"),
+            ObservatoryEdge("announcement-flow", "status-summary", "updates"),
         ],
     )
