@@ -422,8 +422,10 @@ class Environment:
 
     def collect_delivery(self, delivery_id: str, viewer_id: str, at: datetime) -> None:
         delivery = self.deliveries[delivery_id]
-        if viewer_id != "manager-1" and self.unit_for_resident(viewer_id, at) != delivery.unit_id:
-            raise PermissionError("resident cannot collect another unit's delivery")
+        if not self._is_manager(viewer_id):
+            self.require_resident(viewer_id)
+            if self.unit_for_resident(viewer_id, at) != delivery.unit_id:
+                raise PermissionError("resident cannot collect another unit's delivery")
         if delivery.status != "waiting":
             raise ValueError("delivery is already collected")
         delivery.status = "collected"
