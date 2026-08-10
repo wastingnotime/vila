@@ -502,6 +502,8 @@ class Environment:
         """Build a small user-facing history, not a raw technical event log."""
         self.overdue_payments(now)
         is_manager = self._is_manager(viewer_id)
+        if not is_manager:
+            self.require_resident(viewer_id)
         if is_manager:
             viewer_units: set[str] | None = None
         elif self.membership_history:
