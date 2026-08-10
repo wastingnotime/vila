@@ -10,3 +10,7 @@ endpoints and depth.
 
 Notifications use a separate event lane from projections to avoid visual
 overlap in the all-domains graph.
+
+Declared actor IDs now match emitted observation actors, and the shared
+`ObservationLog` sink is explicit so runtime observations can resolve animated
+beam endpoints.

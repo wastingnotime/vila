@@ -13,8 +13,11 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(
             set(nodes),
             {
-                "resident-actor",
-                "manager-actor",
+                "resident-1",
+                "resident-new",
+                "resident-declined",
+                "manager-1",
+                "system",
                 "status-summary",
                 "maintenance-queue",
                 "delivery-flow",
@@ -23,19 +26,20 @@ class RuntimeScenarioTests(unittest.TestCase):
                 "onboarding-flow",
                 "resident-notifications",
                 "activity-history",
+                "ObservationLog",
             },
         )
-        self.assertIn(("resident-actor", "status-summary"), edges)
-        self.assertIn(("manager-actor", "maintenance-queue"), edges)
+        self.assertIn(("resident-1", "status-summary"), edges)
+        self.assertIn(("manager-1", "maintenance-queue"), edges)
         self.assertIn(("maintenance-queue", "resident-notifications"), edges)
         self.assertIn(("payment-flow", "activity-history"), edges)
         self.assertIn(("delivery-flow", "status-summary"), edges)
-        self.assertIn(("manager-actor", "onboarding-flow"), edges)
+        self.assertIn(("manager-1", "onboarding-flow"), edges)
         self.assertEqual(nodes["status-summary"].layer, "projections")
         self.assertEqual(nodes["resident-notifications"].kind, "notification")
         self.assertEqual(nodes["resident-notifications"].layer, "events")
         self.assertNotEqual(nodes["resident-notifications"].layer, nodes["status-summary"].layer)
-        self.assertIsNone(nodes["resident-actor"].realm)
+        self.assertIsNone(nodes["resident-1"].realm)
         self.assertIsNone(nodes["status-summary"].domain)
         self.assertEqual(
             {node.domain for node in nodes.values() if node.domain},
@@ -46,6 +50,22 @@ class RuntimeScenarioTests(unittest.TestCase):
             {node.layer for node in nodes.values()} <=
             {"actors", "use_cases", "events", "projections", "outbound_adapters"}
         )
+        self.assertIn("ObservationLog", nodes)
+
+    def test_runtime_observations_resolve_declared_beam_endpoints(self) -> None:
+        scenario = create_simulation()
+        result = SimulationRunner().run(scenario)
+        node_ids = {node.id for node in scenario.observatory_nodes}
+        renderable_actors = {
+            observation.actor
+            for observation in result.observations.observations
+            if observation.actor
+            and observation.type not in {"scheduled_action_started", "scenario_started", "scenario_finished"}
+            and "invariant" not in observation.type
+        }
+
+        self.assertTrue(renderable_actors <= node_ids)
+        self.assertIn("ObservationLog", node_ids)
 
     def test_runtime_adapter_emits_onboarding_access_evidence(self) -> None:
         result = SimulationRunner().run(create_simulation())
