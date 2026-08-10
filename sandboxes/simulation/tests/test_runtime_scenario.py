@@ -212,6 +212,7 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(collected[0].payload["collected"]["status"], "collected")
         self.assertEqual(collected[0].payload["collected"]["collected_at"], "2026-01-07T00:00:00+00:00")
         self.assertTrue(collected[0].payload["collection_event_recorded"])
+        self.assertEqual(collected[0].payload["collected_by"], "resident-1")
 
     def test_runtime_adapter_emits_manual_payment_confirmation(self) -> None:
         result = SimulationRunner().run(create_simulation())
