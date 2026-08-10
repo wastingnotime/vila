@@ -288,6 +288,7 @@ def _manager_confirms_payment(context: object) -> None:
             "payment_index": 0,
             "status": environment.payments[0].status,
             "paid_at": environment.payments[0].paid_at.isoformat(),
+            "confirmed_by": "manager-1",
         },
     )
 
