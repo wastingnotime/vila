@@ -60,6 +60,15 @@ class MembershipHistoryTests(unittest.TestCase):
         self.assertEqual(replayed.unit_for_resident("resident-1", rejoin_at), "unit-103")
         self.assertEqual(replayed.membership_history, environment.membership_history)
 
+    def test_move_to_current_unit_is_rejected_without_an_event(self) -> None:
+        environment = notification_fatigue_environment()
+
+        with self.assertRaises(ValueError):
+            environment.move_resident("resident-1", "unit-101", MOVE_AT)
+
+        self.assertEqual(environment.events, [])
+        self.assertEqual(len(environment.membership_history), 4)
+
 
 if __name__ == "__main__":
     unittest.main()
