@@ -499,7 +499,7 @@ class Environment:
         if at.astimezone(timezone.utc) < delivery.received_at:
             raise ValueError("delivery cannot be collected before it is received")
         if not self._is_manager(viewer_id):
-            self.require_resident(viewer_id)
+            self._require_current_resident(viewer_id, at)
             if self.unit_for_resident(viewer_id, at) != delivery.unit_id:
                 raise PermissionError("resident cannot collect another unit's delivery")
         if delivery.status != "waiting":
