@@ -230,6 +230,8 @@ class Environment:
     def mark_payment_paid(self, payment_index: int, at: datetime, confirmed_by: str | None = None) -> None:
         if confirmed_by is not None:
             self.require_manager(confirmed_by)
+        if not 0 <= payment_index < len(self.payments):
+            raise ValueError(f"unknown payment index: {payment_index}")
         payment = self.payments[payment_index]
         if payment.status == "paid":
             raise ValueError("payment is already paid")
