@@ -336,6 +336,12 @@ class Environment:
         self.require_manager(published_by)
         if priority not in {"normal", "high"}:
             raise ValueError(f"unknown announcement priority: {priority}")
+        if any(
+            announcement.condominium_id == self.condominium_id
+            and announcement.announcement_id == announcement_id
+            for announcement in self.announcements
+        ):
+            raise ValueError(f"announcement already exists: {announcement_id}")
         announcement = Announcement(
             condominium_id=self.condominium_id,
             announcement_id=announcement_id,
