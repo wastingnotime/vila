@@ -168,6 +168,7 @@ class SimulationModelTests(unittest.TestCase):
 
         rebuilt = environment.from_history(seeded_environment(), environment.events)
         self.assertEqual(environment.events[-1].name, "payment_paid")
+        self.assertEqual(environment.events[-1].payload["confirmed_by"], "manager-1")
         self.assertEqual(rebuilt.payments[0].status, "paid")
         self.assertEqual(
             [item.summary for item in environment.activity_history("resident-1", now)],
