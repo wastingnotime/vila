@@ -61,6 +61,25 @@ class OnboardingTests(unittest.TestCase):
 
         self.assertNotIn("new-resident", environment.residents)
 
+    def test_onboarding_acceptance_is_replayable(self) -> None:
+        environment = notification_fatigue_environment()
+        accepted_at = START + timedelta(days=1)
+        environment.invite_resident(
+            "invite-replay",
+            "new-resident",
+            "unit-102",
+            START,
+            START + timedelta(days=7),
+            invited_by="manager-1",
+        )
+        environment.accept_invitation("invite-replay", "new-resident", accepted_at)
+
+        replayed = environment.from_history(notification_fatigue_environment(), environment.events)
+
+        self.assertEqual(replayed.unit_for_resident("new-resident", accepted_at), "unit-102")
+        self.assertEqual(replayed.invitations["invite-replay"].status, "accepted")
+        self.assertEqual(replayed.membership_history[-1].active_from, accepted_at)
+
 
 if __name__ == "__main__":
     unittest.main()
