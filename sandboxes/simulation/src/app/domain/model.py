@@ -454,6 +454,7 @@ class Environment:
         if self._is_manager(viewer_id):
             visible_units = set(self.units)
         else:
+            self.require_resident(viewer_id)
             visible_units = {self.unit_for_resident(viewer_id, at)}
         return sorted(
             [
