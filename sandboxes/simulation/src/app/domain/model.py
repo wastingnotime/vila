@@ -215,6 +215,8 @@ class Environment:
 
     def open_request(self, now: datetime, *, request_id: str, resident_id: str, category: str, description: str) -> Event:
         self.require_resident(resident_id)
+        if request_id in self.requests:
+            raise ValueError(f"maintenance request already exists: {request_id}")
         unit_id = self.unit_for_resident(resident_id, now)
         return self.record(
             "maintenance_opened",
