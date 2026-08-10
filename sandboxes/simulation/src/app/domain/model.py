@@ -405,12 +405,19 @@ class Environment:
     def _is_manager(self, viewer_id: str) -> bool:
         return self.roles.get(viewer_id) == "building_manager"
 
-    def _require_current_resident(self, resident_id: str, at: datetime) -> None:
-        self.require_resident(resident_id)
+    def has_current_access(self, resident_id: str, at: datetime) -> bool:
+        if self.roles.get(resident_id) != "resident":
+            return False
         try:
             self.unit_for_resident(resident_id, at)
-        except KeyError as error:
-            raise PermissionError("resident does not have current access") from error
+        except KeyError:
+            return False
+        return True
+
+    def _require_current_resident(self, resident_id: str, at: datetime) -> None:
+        self.require_resident(resident_id)
+        if not self.has_current_access(resident_id, at):
+            raise PermissionError("resident does not have current access")
 
     def resident_status(self, resident_id: str, now: datetime) -> list[str]:
         self._require_current_resident(resident_id, now)
