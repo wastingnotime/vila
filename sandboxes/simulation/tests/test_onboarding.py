@@ -100,7 +100,6 @@ class OnboardingTests(unittest.TestCase):
                 START + timedelta(days=7),
                 invited_by="manager-1",
             )
-
         with self.assertRaises(ValueError):
             environment.invite_resident(
                 "invite-existing",
@@ -111,6 +110,23 @@ class OnboardingTests(unittest.TestCase):
                 invited_by="manager-1",
             )
 
+    def test_only_the_invited_resident_can_accept_or_reject(self) -> None:
+        environment = notification_fatigue_environment()
+        environment.invite_resident(
+            "invite-owned",
+            "new-resident",
+            "unit-102",
+            START,
+            START + timedelta(days=7),
+            invited_by="manager-1",
+        )
+
+        with self.assertRaises(PermissionError):
+            environment.accept_invitation("invite-owned", "resident-2", START + timedelta(days=1))
+        with self.assertRaises(PermissionError):
+            environment.reject_invitation("invite-owned", "resident-2", START + timedelta(days=1))
+
+        self.assertEqual(environment.invitations["invite-owned"].status, "pending")
 
 if __name__ == "__main__":
     unittest.main()
