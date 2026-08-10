@@ -171,6 +171,26 @@ class Environment:
             )
             self.memberships[event.payload["resident_id"]] = event.payload["unit_id"]
             self.residents.add(event.payload["resident_id"])
+        elif event.name == "announcement_published":
+            self.announcements.append(
+                Announcement(
+                    condominium_id=self.condominium_id,
+                    announcement_id=event.payload["announcement_id"],
+                    title=event.payload["title"],
+                    body=event.payload["body"],
+                    priority=event.payload["priority"],
+                    published_at=event.at,
+                    expires_at=datetime.fromisoformat(event.payload["expires_at"]) if event.payload["expires_at"] else None,
+                )
+            )
+        elif event.name == "delivery_received":
+            self.deliveries[event.payload["delivery_id"]] = Delivery(
+                delivery_id=event.payload["delivery_id"],
+                condominium_id=self.condominium_id,
+                unit_id=event.payload["unit_id"],
+                description=event.payload["description"],
+                received_at=event.at,
+            )
 
     def _close_membership(self, resident_id: str, unit_id: str, at: datetime) -> None:
         for index, membership in enumerate(self.membership_history):
@@ -350,17 +370,16 @@ class Environment:
         normalized_expires_at = expires_at.astimezone(timezone.utc) if expires_at else None
         if normalized_expires_at is not None and normalized_expires_at <= normalized_published_at:
             raise ValueError("announcement expiry must follow publication")
-        announcement = Announcement(
-            condominium_id=self.condominium_id,
+        self.record(
+            "announcement_published",
+            normalized_published_at,
             announcement_id=announcement_id,
             title=title,
             body=body,
             priority=priority,
-            published_at=normalized_published_at,
-            expires_at=normalized_expires_at,
+            expires_at=normalized_expires_at.isoformat() if normalized_expires_at else "",
         )
-        self.announcements.append(announcement)
-        return announcement
+        return self.announcements[-1]
 
     def active_announcements(self, now: datetime) -> list[Announcement]:
         current = now.astimezone(timezone.utc)
@@ -392,15 +411,15 @@ class Environment:
             raise ValueError(f"delivery already exists: {delivery_id}")
         if unit_id not in self.units:
             raise KeyError(f"unknown unit: {unit_id}")
-        delivery = Delivery(
+        normalized_received_at = received_at.astimezone(timezone.utc)
+        self.record(
+            "delivery_received",
+            normalized_received_at,
             delivery_id=delivery_id,
-            condominium_id=self.condominium_id,
             unit_id=unit_id,
             description=description,
-            received_at=received_at.astimezone(timezone.utc),
         )
-        self.deliveries[delivery_id] = delivery
-        return delivery
+        return self.deliveries[delivery_id]
 
     def open_deliveries(self, viewer_id: str, at: datetime) -> list[Delivery]:
         if self._is_manager(viewer_id):
