@@ -413,6 +413,8 @@ class Environment:
         recorded_by: str,
     ) -> Delivery:
         self.require_manager(recorded_by)
+        if not description.strip():
+            raise ValueError("delivery description is required")
         if delivery_id in self.deliveries:
             raise ValueError(f"delivery already exists: {delivery_id}")
         if unit_id not in self.units:
