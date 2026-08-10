@@ -103,6 +103,12 @@ class DeliveryTests(unittest.TestCase):
 
         self.assertNotIn("unknown-unit", environment.deliveries)
 
+    def test_unknown_delivery_viewer_is_rejected(self) -> None:
+        environment, _ = run_delivery_slice()
+
+        with self.assertRaises(PermissionError):
+            environment.open_deliveries("unknown-user", NOW)
+
 
 if __name__ == "__main__":
     unittest.main()
