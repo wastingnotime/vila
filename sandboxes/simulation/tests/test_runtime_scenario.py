@@ -96,6 +96,17 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertTrue(invariant_results)
         self.assertTrue(all(invariant_results))
 
+    def test_runtime_adapter_emits_expired_announcement_state(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+        closed = [
+            observation
+            for observation in result.observations.observations
+            if observation.name == "announcement_window_closed"
+        ]
+
+        self.assertEqual(len(closed), 1)
+        self.assertEqual(closed[0].payload, {"active_ids": [], "retained_ids": ["announcement-1"]})
+
     def test_runtime_adapter_emits_shared_unit_status_notifications(self) -> None:
         result = SimulationRunner().run(create_simulation())
 

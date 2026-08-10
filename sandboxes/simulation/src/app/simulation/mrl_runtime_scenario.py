@@ -13,6 +13,7 @@ MANAGER_REVIEW = datetime(2026, 1, 7, tzinfo=timezone.utc)
 PAYMENT_CONFIRMATION = datetime(2026, 1, 8, tzinfo=timezone.utc)
 QUEUE_REVIEW = datetime(2026, 2, 8, tzinfo=timezone.utc)
 SUMMARY_AT = datetime(2026, 1, 6, 1, 0, tzinfo=timezone.utc)
+ANNOUNCEMENT_EXPIRATION_CHECK = datetime(2026, 1, 8, 1, 0, tzinfo=timezone.utc)
 
 
 def _run_slice(context: object) -> None:
@@ -94,6 +95,7 @@ def _emit_composed_status_summary(context: object) -> None:
         "Water will be unavailable Thursday.",
         "normal",
         SUMMARY_AT,
+        SUMMARY_AT.replace(day=7),
         published_by="manager-1",
     )
     context.emit(
@@ -292,6 +294,24 @@ def _emit_paid_activity(context: object) -> None:
     )
 
 
+def _emit_expired_announcement_state(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    context.emit(
+        "projection",
+        "announcement_window_closed",
+        source="AnnouncementProjection",
+        actor="resident-1",
+        correlation_id="announcement-1",
+        payload={
+            "active_ids": [
+                announcement.announcement_id
+                for announcement in environment.active_announcements(ANNOUNCEMENT_EXPIRATION_CHECK)
+            ],
+            "retained_ids": [announcement.announcement_id for announcement in environment.announcements],
+        },
+    )
+
+
 def _run_queue_observation(context: object) -> None:
     environment: Environment = context.environment  # type: ignore[attr-defined]
     arrival = datetime(2026, 2, 6, tzinfo=timezone.utc)
@@ -434,6 +454,13 @@ def create_simulation() -> Scenario:
                 name="observe_manager_attention_queue",
                 source="VilaSimulation",
                 correlation_id="queue-slice-1",
+            ),
+            InitialScheduledAction(
+                when=ANNOUNCEMENT_EXPIRATION_CHECK,
+                action=_emit_expired_announcement_state,
+                name="check_expired_announcement",
+                source="VilaSimulation",
+                correlation_id="announcement-1",
             ),
             InitialScheduledAction(
                 when=PAYMENT_CONFIRMATION,
