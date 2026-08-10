@@ -395,6 +395,7 @@ class Environment:
             body=body,
             priority=priority,
             expires_at=normalized_expires_at.isoformat() if normalized_expires_at else "",
+            published_by=published_by,
         )
         return self.announcements[-1]
 
@@ -439,6 +440,7 @@ class Environment:
             delivery_id=delivery_id,
             unit_id=unit_id,
             description=description,
+            recorded_by=recorded_by,
         )
         return self.deliveries[delivery_id]
 
