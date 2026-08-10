@@ -114,6 +114,27 @@ class SimulationModelTests(unittest.TestCase):
 
         self.assertEqual(environment.requests, {})
 
+    def test_entity_identifiers_cannot_be_blank(self) -> None:
+        environment = notification_fatigue_environment()
+        now = datetime(2026, 1, 6, tzinfo=timezone.utc)
+
+        with self.assertRaises(ValueError):
+            environment.open_request(
+                now,
+                request_id=" ",
+                resident_id="resident-1",
+                category="plumbing",
+                description="Low water pressure",
+            )
+        with self.assertRaises(ValueError):
+            environment.publish_announcement(
+                " ", "Notice", "Useful notice", "normal", now, published_by="manager-1"
+            )
+        with self.assertRaises(ValueError):
+            environment.record_delivery(" ", "unit-101", "Package", now, recorded_by="manager-1")
+
+        self.assertEqual(environment.events, [])
+
     def test_event_history_rebuilds_the_same_projection(self) -> None:
         environment = seeded_environment()
         now = datetime(2026, 1, 6, tzinfo=timezone.utc)
