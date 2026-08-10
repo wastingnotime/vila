@@ -117,6 +117,16 @@ class DeliveryTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             environment.open_deliveries("resident-1", departed_at)
 
+    def test_departed_resident_cannot_collect_current_delivery(self) -> None:
+        environment, _ = run_delivery_slice()
+        departed_at = NOW.replace(day=10)
+        environment.leave_resident("resident-1", departed_at)
+
+        with self.assertRaises(PermissionError):
+            environment.collect_delivery("delivery-1", "resident-1", departed_at)
+
+        self.assertEqual(environment.deliveries["delivery-1"].status, "waiting")
+
 
 if __name__ == "__main__":
     unittest.main()
