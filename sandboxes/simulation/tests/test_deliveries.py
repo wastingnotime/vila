@@ -54,6 +54,16 @@ class DeliveryTests(unittest.TestCase):
 
         self.assertNotIn("foreign-1", [delivery.delivery_id for delivery in environment.open_deliveries("manager-1", NOW)])
 
+    def test_delivery_cannot_be_collected_before_receipt(self) -> None:
+        environment, _ = run_delivery_slice()
+        future = NOW.replace(day=8)
+        environment.record_delivery("future-1", "unit-101", "Future package", future, recorded_by="manager-1")
+
+        with self.assertRaises(ValueError):
+            environment.collect_delivery("future-1", "resident-1", NOW)
+
+        self.assertEqual(environment.deliveries["future-1"].status, "waiting")
+
 
 if __name__ == "__main__":
     unittest.main()
