@@ -62,6 +62,12 @@ class MaintenanceNotificationTests(unittest.TestCase):
 
         self.assertEqual(environment.maintenance_status_notifications("request-2", now), [])
 
+    def test_unknown_request_notification_reference_is_a_domain_error(self) -> None:
+        environment, _ = run_maintenance_notification_slice()
+
+        with self.assertRaises(ValueError):
+            environment.maintenance_status_notifications("missing-request", environment.notifications[0].at)
+
 
 if __name__ == "__main__":
     unittest.main()
