@@ -109,6 +109,14 @@ class DeliveryTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             environment.open_deliveries("unknown-user", NOW)
 
+    def test_departed_resident_cannot_view_current_deliveries(self) -> None:
+        environment, _ = run_delivery_slice()
+        departed_at = NOW.replace(day=10)
+        environment.leave_resident("resident-1", departed_at)
+
+        with self.assertRaises(PermissionError):
+            environment.open_deliveries("resident-1", departed_at)
+
 
 if __name__ == "__main__":
     unittest.main()
