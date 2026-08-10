@@ -436,7 +436,7 @@ class Environment:
         if delivery_id in self.deliveries:
             raise ValueError(f"delivery already exists: {delivery_id}")
         if unit_id not in self.units:
-            raise KeyError(f"unknown unit: {unit_id}")
+            raise ValueError(f"unknown unit: {unit_id}")
         normalized_received_at = received_at.astimezone(timezone.utc)
         self.record(
             "delivery_received",
