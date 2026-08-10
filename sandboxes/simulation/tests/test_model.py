@@ -51,6 +51,29 @@ class SimulationModelTests(unittest.TestCase):
         self.assertEqual(len(environment.events), 5)
         self.assertEqual(environment.events[-1].payload["changed_by"], "manager-1")
 
+    def test_duplicate_request_id_cannot_replace_existing_request(self) -> None:
+        environment = seeded_environment()
+        now = datetime(2026, 1, 6, tzinfo=timezone.utc)
+        environment.open_request(
+            now,
+            request_id="request-1",
+            resident_id="resident-1",
+            category="plumbing",
+            description="Original request",
+        )
+
+        with self.assertRaises(ValueError):
+            environment.open_request(
+                now,
+                request_id="request-1",
+                resident_id="resident-1",
+                category="electrical",
+                description="Replacement request",
+            )
+
+        self.assertEqual(environment.requests["request-1"].description, "Original request")
+        self.assertEqual(len(environment.events), 1)
+
     def test_event_history_rebuilds_the_same_projection(self) -> None:
         environment = seeded_environment()
         now = datetime(2026, 1, 6, tzinfo=timezone.utc)
