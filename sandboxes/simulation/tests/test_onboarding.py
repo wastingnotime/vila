@@ -29,6 +29,38 @@ class OnboardingTests(unittest.TestCase):
             ["invitation_created", "invitation_accepted"],
         )
 
+    def test_rejected_invitation_does_not_grant_access(self) -> None:
+        environment = notification_fatigue_environment()
+        environment.invite_resident(
+            "invite-rejected",
+            "new-resident",
+            "unit-102",
+            START,
+            START + timedelta(days=7),
+            invited_by="manager-1",
+        )
+
+        environment.reject_invitation("invite-rejected", "new-resident", START + timedelta(days=1))
+
+        self.assertNotIn("new-resident", environment.residents)
+        self.assertEqual(environment.invitations["invite-rejected"].status, "rejected")
+
+    def test_expired_invitation_cannot_be_accepted(self) -> None:
+        environment = notification_fatigue_environment()
+        environment.invite_resident(
+            "invite-expired",
+            "new-resident",
+            "unit-102",
+            START,
+            START + timedelta(days=1),
+            invited_by="manager-1",
+        )
+
+        with self.assertRaises(ValueError):
+            environment.accept_invitation("invite-expired", "new-resident", START + timedelta(days=1))
+
+        self.assertNotIn("new-resident", environment.residents)
+
 
 if __name__ == "__main__":
     unittest.main()
