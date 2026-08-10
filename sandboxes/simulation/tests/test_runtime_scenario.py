@@ -229,6 +229,12 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(confirmations[0].payload["payment_index"], 0)
         self.assertEqual(confirmations[0].payload["status"], "paid")
         self.assertEqual(confirmations[0].payload["paid_at"], "2026-01-08T00:00:00+00:00")
+        payment_events = [
+            observation
+            for observation in result.observations.observations
+            if observation.name == "payment_marked_paid"
+        ]
+        self.assertEqual(payment_events[0].payload["confirmed_by"], "manager-1")
 
     def test_runtime_adapter_emits_paid_activity_after_confirmation(self) -> None:
         result = SimulationRunner().run(create_simulation())
