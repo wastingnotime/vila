@@ -74,6 +74,27 @@ class SimulationModelTests(unittest.TestCase):
         self.assertEqual(environment.requests["request-1"].description, "Original request")
         self.assertEqual(len(environment.events), 1)
 
+    def test_request_status_cannot_change_before_creation(self) -> None:
+        environment = seeded_environment()
+        created_at = datetime(2026, 1, 6, tzinfo=timezone.utc)
+        environment.open_request(
+            created_at,
+            request_id="request-1",
+            resident_id="resident-1",
+            category="plumbing",
+            description="Low water pressure",
+        )
+
+        with self.assertRaises(ValueError):
+            environment.change_request_status(
+                datetime(2026, 1, 5, tzinfo=timezone.utc),
+                request_id="request-1",
+                manager_id="manager-1",
+                next_status="under_review",
+            )
+
+        self.assertEqual(environment.requests["request-1"].status, "submitted")
+
     def test_event_history_rebuilds_the_same_projection(self) -> None:
         environment = seeded_environment()
         now = datetime(2026, 1, 6, tzinfo=timezone.utc)
