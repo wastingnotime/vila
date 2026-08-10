@@ -217,6 +217,17 @@ class SimulationModelTests(unittest.TestCase):
         self.assertEqual([item.announcement_id for item in rebuilt.announcements], ["announcement-1"])
         self.assertEqual(rebuilt.deliveries["delivery-1"].description, "Small package")
 
+    def test_manager_owned_history_records_the_owner(self) -> None:
+        environment = notification_fatigue_environment()
+        now = datetime(2026, 1, 6, tzinfo=timezone.utc)
+        environment.publish_announcement(
+            "announcement-1", "Notice", "Useful notice", "normal", now, published_by="manager-1"
+        )
+        environment.record_delivery("delivery-1", "unit-101", "Package", now, recorded_by="manager-1")
+
+        self.assertEqual(environment.events[0].payload["published_by"], "manager-1")
+        self.assertEqual(environment.events[1].payload["recorded_by"], "manager-1")
+
 
 if __name__ == "__main__":
     unittest.main()
