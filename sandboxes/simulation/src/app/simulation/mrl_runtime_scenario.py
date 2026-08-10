@@ -232,6 +232,11 @@ def _resident_collects_delivery(context: object) -> None:
                 "status": environment.deliveries["delivery-1"].status,
                 "collected_at": environment.deliveries["delivery-1"].collected_at.isoformat(),
             },
+            "collection_event_recorded": any(
+                event.name == "delivery_collected"
+                and event.payload.get("delivery_id") == "delivery-1"
+                for event in environment.events
+            ),
         },
     )
 
