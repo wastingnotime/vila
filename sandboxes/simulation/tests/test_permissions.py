@@ -68,6 +68,15 @@ class PermissionTests(unittest.TestCase):
             environment.mark_payment_paid(0, now, confirmed_by="resident-1")
         self.assertEqual(environment.payments[0].status, "pending")
 
+    def test_unknown_payment_reference_is_rejected_as_domain_error(self) -> None:
+        environment = notification_fatigue_environment()
+        now = datetime(2026, 1, 8, tzinfo=timezone.utc)
+
+        with self.assertRaises(ValueError):
+            environment.mark_payment_paid(99, now, confirmed_by="manager-1")
+
+        self.assertEqual(environment.events, [])
+
     def test_manager_cannot_submit_a_resident_request(self) -> None:
         environment = notification_fatigue_environment()
         now = datetime(2026, 1, 6, tzinfo=timezone.utc)
