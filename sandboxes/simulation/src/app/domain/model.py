@@ -364,6 +364,8 @@ class Environment:
         published_by: str,
     ) -> Announcement:
         self.require_manager(published_by)
+        if not title.strip() or not body.strip():
+            raise ValueError("announcement title and body are required")
         if priority not in {"normal", "high"}:
             raise ValueError(f"unknown announcement priority: {priority}")
         if any(
