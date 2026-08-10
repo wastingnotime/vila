@@ -267,6 +267,8 @@ class Environment:
 
     def change_request_status(self, now: datetime, *, request_id: str, manager_id: str, next_status: str) -> Event:
         self.require_manager(manager_id)
+        if request_id not in self.requests:
+            raise ValueError(f"unknown maintenance request: {request_id}")
         request = self.requests[request_id]
         if request.created_at is not None and now.astimezone(timezone.utc) < request.created_at:
             raise ValueError("maintenance status cannot precede request creation")
