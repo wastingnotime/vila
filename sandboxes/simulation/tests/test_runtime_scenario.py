@@ -108,6 +108,18 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(closed[0].correlation_id, "announcement-1")
         self.assertEqual(closed[0].payload, {"active_ids": [], "retained_ids": ["announcement-1"]})
 
+    def test_runtime_adapter_emits_resident_movement_scope(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+        moved = [
+            observation
+            for observation in result.observations.observations
+            if observation.name == "resident_status_after_move_ready"
+        ]
+
+        self.assertEqual(len(moved), 1)
+        self.assertEqual(moved[0].payload["action_items"], ["overdue_payment"])
+        self.assertEqual(moved[0].payload["historical_request_ids"], ["request-1"])
+
     def test_runtime_adapter_emits_shared_unit_status_notifications(self) -> None:
         result = SimulationRunner().run(create_simulation())
 
