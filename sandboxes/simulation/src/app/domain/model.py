@@ -345,7 +345,7 @@ class Environment:
         if self.roles.get(resident_id) != "resident":
             raise PermissionError("only a resident can rejoin the condominium")
         if unit_id not in self.units:
-            raise KeyError(f"unknown unit: {unit_id}")
+            raise ValueError(f"unknown unit: {unit_id}")
         try:
             self.unit_for_resident(resident_id, at)
         except KeyError:
