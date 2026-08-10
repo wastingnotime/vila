@@ -239,6 +239,8 @@ class Environment:
 
     def open_request(self, now: datetime, *, request_id: str, resident_id: str, category: str, description: str) -> Event:
         self.require_resident(resident_id)
+        if not request_id.strip():
+            raise ValueError("maintenance request identifier is required")
         if not category.strip() or not description.strip():
             raise ValueError("maintenance request category and description are required")
         if request_id in self.requests:
@@ -364,6 +366,8 @@ class Environment:
         published_by: str,
     ) -> Announcement:
         self.require_manager(published_by)
+        if not announcement_id.strip():
+            raise ValueError("announcement identifier is required")
         if not title.strip() or not body.strip():
             raise ValueError("announcement title and body are required")
         if priority not in {"normal", "high"}:
@@ -415,6 +419,8 @@ class Environment:
         recorded_by: str,
     ) -> Delivery:
         self.require_manager(recorded_by)
+        if not delivery_id.strip():
+            raise ValueError("delivery identifier is required")
         if not description.strip():
             raise ValueError("delivery description is required")
         if delivery_id in self.deliveries:
