@@ -77,6 +77,17 @@ class MembershipHistoryTests(unittest.TestCase):
 
         self.assertEqual(environment.events, [])
 
+    def test_rejoin_to_unknown_unit_is_rejected_as_domain_error(self) -> None:
+        environment = notification_fatigue_environment()
+        environment.leave_resident("resident-1", datetime(2026, 2, 10, tzinfo=timezone.utc))
+
+        with self.assertRaises(ValueError):
+            environment.rejoin_resident(
+                "resident-1", "unit-999", datetime(2026, 2, 12, tzinfo=timezone.utc)
+            )
+
+        self.assertNotIn("resident_rejoined", [event.name for event in environment.events])
+
 
 if __name__ == "__main__":
     unittest.main()
