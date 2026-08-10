@@ -147,6 +147,10 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(len(rejoined), 1)
         self.assertEqual(rejoined[0].payload["unit_id"], "unit-103")
         self.assertEqual(rejoined[0].payload["action_items"], ["overdue_payment"])
+        self.assertEqual(
+            rejoined[0].payload["historical_unit_ids"],
+            ["unit-101", "unit-102", "unit-103"],
+        )
 
     def test_runtime_adapter_correlates_membership_lifecycle_events(self) -> None:
         result = SimulationRunner().run(create_simulation())
