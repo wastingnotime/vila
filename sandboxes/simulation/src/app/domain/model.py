@@ -541,6 +541,7 @@ class Environment:
 
     def actionable_notifications(self, recipient_id: str, now: datetime) -> list[Notification]:
         """Return one notification per actionable category and simulated day."""
+        self.require_manager(recipient_id)
         day = now.astimezone(timezone.utc).date()
         notifications: list[Notification] = []
         pending_requests = [
