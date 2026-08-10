@@ -47,6 +47,18 @@ class MembershipPeriod:
     active_until: datetime | None = None
 
 
+@dataclass
+class Invitation:
+    invitation_id: str
+    resident_id: str
+    unit_id: str
+    invited_at: datetime
+    expires_at: datetime
+    status: str = "pending"
+    accepted_at: datetime | None = None
+    rejected_at: datetime | None = None
+
+
 @dataclass(frozen=True)
 class ActivityItem:
     kind: str
@@ -93,6 +105,7 @@ class Environment:
     residents: set[str] = field(default_factory=set)
     roles: dict[str, str] = field(default_factory=dict)
     membership_history: list[MembershipPeriod] = field(default_factory=list)
+    invitations: dict[str, Invitation] = field(default_factory=dict)
     payments: list[Payment] = field(default_factory=list)
     requests: dict[str, MaintenanceRequest] = field(default_factory=dict)
     events: list[Event] = field(default_factory=list)
@@ -117,6 +130,7 @@ class Environment:
             residents=set(initial.residents),
             roles=dict(initial.roles),
             membership_history=list(initial.membership_history),
+            invitations={invitation_id: Invitation(**vars(invitation)) for invitation_id, invitation in initial.invitations.items()},
             payments=[Payment(unit_id=payment.unit_id, due_at=payment.due_at, status=payment.status, paid_at=payment.paid_at) for payment in initial.payments],
             announcements=list(initial.announcements),
             deliveries={delivery_id: Delivery(**vars(delivery)) for delivery_id, delivery in initial.deliveries.items()},
@@ -173,6 +187,32 @@ class Environment:
             )
             self.memberships[event.payload["resident_id"]] = event.payload["unit_id"]
             self.residents.add(event.payload["resident_id"])
+        elif event.name == "invitation_created":
+            self.invitations[event.payload["invitation_id"]] = Invitation(
+                invitation_id=event.payload["invitation_id"],
+                resident_id=event.payload["resident_id"],
+                unit_id=event.payload["unit_id"],
+                invited_at=event.at,
+                expires_at=datetime.fromisoformat(event.payload["expires_at"]),
+            )
+            self.roles[event.payload["resident_id"]] = "resident"
+        elif event.name == "invitation_accepted":
+            invitation = self.invitations[event.payload["invitation_id"]]
+            invitation.status = "accepted"
+            invitation.accepted_at = event.at
+            self.membership_history.append(
+                MembershipPeriod(
+                    resident_id=invitation.resident_id,
+                    unit_id=invitation.unit_id,
+                    active_from=event.at,
+                )
+            )
+            self.memberships[invitation.resident_id] = invitation.unit_id
+            self.residents.add(invitation.resident_id)
+        elif event.name == "invitation_rejected":
+            invitation = self.invitations[event.payload["invitation_id"]]
+            invitation.status = "rejected"
+            invitation.rejected_at = event.at
         elif event.name == "announcement_published":
             self.announcements.append(
                 Announcement(
@@ -296,6 +336,56 @@ class Environment:
     def require_manager(self, manager_id: str) -> None:
         if self.roles.get(manager_id) != "building_manager":
             raise PermissionError("only a building manager can perform this action")
+
+    def invite_resident(
+        self,
+        invitation_id: str,
+        resident_id: str,
+        unit_id: str,
+        invited_at: datetime,
+        expires_at: datetime,
+        *,
+        invited_by: str,
+    ) -> Invitation:
+        self.require_manager(invited_by)
+        if not invitation_id.strip() or not resident_id.strip():
+            raise ValueError("invitation and resident identifiers are required")
+        if invitation_id in self.invitations:
+            raise ValueError(f"invitation already exists: {invitation_id}")
+        if unit_id not in self.units:
+            raise ValueError(f"unknown unit: {unit_id}")
+        normalized_invited_at = invited_at.astimezone(timezone.utc)
+        normalized_expires_at = expires_at.astimezone(timezone.utc)
+        if normalized_expires_at <= normalized_invited_at:
+            raise ValueError("invitation expiry must follow invitation time")
+        self.record(
+            "invitation_created",
+            normalized_invited_at,
+            invitation_id=invitation_id,
+            resident_id=resident_id,
+            unit_id=unit_id,
+            expires_at=normalized_expires_at.isoformat(),
+            invited_by=invited_by,
+        )
+        return self.invitations[invitation_id]
+
+    def accept_invitation(self, invitation_id: str, resident_id: str, at: datetime) -> None:
+        if invitation_id not in self.invitations:
+            raise ValueError(f"unknown invitation: {invitation_id}")
+        invitation = self.invitations[invitation_id]
+        if invitation.resident_id != resident_id:
+            raise PermissionError("invitation belongs to another resident")
+        if invitation.status != "pending":
+            raise ValueError("invitation is no longer pending")
+        accepted_at = at.astimezone(timezone.utc)
+        if accepted_at >= invitation.expires_at:
+            raise ValueError("invitation has expired")
+        try:
+            self.unit_for_resident(resident_id, accepted_at)
+        except KeyError:
+            self.record("invitation_accepted", accepted_at, invitation_id=invitation_id, resident_id=resident_id)
+            return
+        raise ValueError("resident already has an active membership")
 
     def _is_manager(self, viewer_id: str) -> bool:
         return self.roles.get(viewer_id) == "building_manager"
