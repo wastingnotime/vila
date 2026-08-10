@@ -22,6 +22,7 @@ ANNOUNCEMENT_EXPIRATION_CHECK = datetime(2026, 1, 8, 1, 0, tzinfo=timezone.utc)
 RESIDENT_MOVE = datetime(2026, 1, 10, tzinfo=timezone.utc)
 RESIDENT_DEPARTURE = datetime(2026, 2, 10, tzinfo=timezone.utc)
 RESIDENT_REJOIN = datetime(2026, 2, 12, tzinfo=timezone.utc)
+ONBOARDING_ACCEPT = datetime(2026, 1, 2, tzinfo=timezone.utc)
 
 
 def _run_slice(context: object) -> None:
@@ -444,6 +445,62 @@ def _resident_rejoins_condominium(context: object) -> None:
     )
 
 
+def _onboard_new_resident(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    context.emit(
+        "intention",
+        "invite_resident",
+        source="ManagerActor",
+        actor="manager-1",
+        correlation_id="invite-new-resident",
+        payload={"resident_id": "resident-new", "unit_id": "unit-103"},
+    )
+    environment.invite_resident(
+        "invite-new-resident",
+        "resident-new",
+        "unit-103",
+        START,
+        START.replace(day=5),
+        invited_by="manager-1",
+    )
+    context.emit(
+        "domain_event",
+        "invitation_created",
+        source="MembershipAggregate",
+        actor="manager-1",
+        correlation_id="invite-new-resident",
+        payload={"resident_id": "resident-new", "unit_id": "unit-103"},
+    )
+    context.emit(
+        "intention",
+        "accept_invitation",
+        source="ResidentActor",
+        actor="resident-new",
+        correlation_id="invite-new-resident",
+        payload={"invitation_id": "invite-new-resident"},
+    )
+    environment.accept_invitation("invite-new-resident", "resident-new", ONBOARDING_ACCEPT)
+    context.emit(
+        "domain_event",
+        "invitation_accepted",
+        source="MembershipAggregate",
+        actor="resident-new",
+        correlation_id="invite-new-resident",
+        payload={"resident_id": "resident-new", "unit_id": "unit-103"},
+    )
+    context.emit(
+        "projection",
+        "resident_onboarding_ready",
+        source="MembershipProjection",
+        actor="resident-new",
+        correlation_id="invite-new-resident",
+        payload={
+            "unit_id": environment.unit_for_resident("resident-new", ONBOARDING_ACCEPT),
+            "current_access": environment.has_current_access("resident-new", ONBOARDING_ACCEPT),
+        },
+    )
+
+
 def _run_queue_observation(context: object) -> None:
     environment: Environment = context.environment  # type: ignore[attr-defined]
     arrival = datetime(2026, 2, 6, tzinfo=timezone.utc)
@@ -553,6 +610,13 @@ def create_simulation() -> Scenario:
                 correlation_id="empty-summary-1",
             ),
             InitialScheduledAction(
+                when=ONBOARDING_ACCEPT,
+                action=_onboard_new_resident,
+                name="onboard_new_resident",
+                source="VilaSimulation",
+                correlation_id="invite-new-resident",
+            ),
+            InitialScheduledAction(
                 when=SUMMARY_AT,
                 action=_emit_composed_status_summary,
                 name="emit_composed_status_summary",
@@ -642,6 +706,7 @@ def create_simulation() -> Scenario:
             ObservatoryNode("delivery-flow", "Delivery flow", "use_case", "use_cases", domain="delivery"),
             ObservatoryNode("payment-flow", "Payment flow", "use_case", "use_cases", domain="payment"),
             ObservatoryNode("announcement-flow", "Announcement flow", "use_case", "use_cases", domain="announcement"),
+            ObservatoryNode("onboarding-flow", "Onboarding flow", "use_case", "use_cases", domain="onboarding"),
             ObservatoryNode("resident-notifications", "Resident notifications", "notification", "events"),
             ObservatoryNode("activity-history", "Activity history", "projection", "projections"),
         ],
@@ -655,5 +720,7 @@ def create_simulation() -> Scenario:
             ObservatoryEdge("payment-flow", "activity-history", "records"),
             ObservatoryEdge("delivery-flow", "status-summary", "updates"),
             ObservatoryEdge("announcement-flow", "status-summary", "updates"),
+            ObservatoryEdge("manager-actor", "onboarding-flow", "invites"),
+            ObservatoryEdge("onboarding-flow", "status-summary", "activates"),
         ],
     )
