@@ -75,6 +75,29 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertNotIn(None, renderable_targets)
         self.assertTrue(renderable_targets <= node_ids)
 
+    def test_runtime_observatory_covers_each_domain_lane(self) -> None:
+        scenario = create_simulation()
+        result = SimulationRunner().run(scenario)
+        targets = {
+            observation.payload.get("use_case_id")
+            for observation in result.observations.observations
+            if observation.actor
+            and observation.type not in {"scheduled_action_started", "scenario_started", "scenario_finished"}
+            and "invariant" not in observation.type
+        }
+
+        self.assertTrue(
+            {
+                "maintenance-queue",
+                "delivery-flow",
+                "payment-flow",
+                "announcement-flow",
+                "onboarding-flow",
+                "status-flow",
+                "activity-flow",
+            } <= targets
+        )
+
     def test_runtime_adapter_emits_onboarding_access_evidence(self) -> None:
         result = SimulationRunner().run(create_simulation())
         ready = [
