@@ -504,6 +504,7 @@ class Environment:
             request
             for request in self.requests.values()
             if request.status == "submitted"
+            and (request.created_at is None or request.created_at <= now.astimezone(timezone.utc))
         ]
         if self._is_manager(recipient_id) and pending_requests:
             already_sent = any(
