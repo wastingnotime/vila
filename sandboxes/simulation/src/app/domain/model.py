@@ -472,6 +472,7 @@ class Environment:
         if self._is_manager(viewer_id):
             action_items = self.manager_status(at)
         else:
+            self.require_resident(viewer_id)
             action_items = self.resident_status(viewer_id, at)
         open_deliveries = self.open_deliveries(viewer_id, at)
         action_items = [*action_items, *(["delivery"] * len(open_deliveries))]
