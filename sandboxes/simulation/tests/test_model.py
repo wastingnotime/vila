@@ -144,6 +144,13 @@ class SimulationModelTests(unittest.TestCase):
 
         self.assertEqual(environment.events, [])
 
+    def test_unknown_status_viewer_is_rejected(self) -> None:
+        environment = notification_fatigue_environment()
+        now = datetime(2026, 1, 6, tzinfo=timezone.utc)
+
+        with self.assertRaises(PermissionError):
+            environment.status_summary("unknown-user", now)
+
     def test_event_history_rebuilds_the_same_projection(self) -> None:
         environment = seeded_environment()
         now = datetime(2026, 1, 6, tzinfo=timezone.utc)
