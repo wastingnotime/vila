@@ -101,6 +101,8 @@ class Environment:
     deliveries: dict[str, Delivery] = field(default_factory=dict)
 
     def record(self, name: str, at: datetime, **payload: str) -> Event:
+        if not name.strip():
+            raise ValueError("event name is required")
         event = Event(name=name, at=at.astimezone(timezone.utc), payload=payload)
         self.events.append(event)
         self._apply(event)
