@@ -526,6 +526,8 @@ class Environment:
 
     def maintenance_status_notifications(self, request_id: str, now: datetime) -> list[Notification]:
         request = self.requests[request_id]
+        if request.created_at is not None and request.created_at > now.astimezone(timezone.utc):
+            return []
         recipients = sorted(
             [
             resident_id
