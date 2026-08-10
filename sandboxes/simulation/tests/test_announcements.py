@@ -38,6 +38,21 @@ class AnnouncementTests(unittest.TestCase):
 
         self.assertNotIn("Other building", [item.title for item in environment.active_announcements(NOW)])
 
+    def test_duplicate_announcement_id_cannot_overwrite_history(self) -> None:
+        environment, _ = run_announcement_slice()
+
+        with self.assertRaises(ValueError):
+            environment.publish_announcement(
+                "announcement-1",
+                "Replacement notice",
+                "Must not replace the original.",
+                "normal",
+                NOW,
+                published_by="manager-1",
+            )
+
+        self.assertEqual(environment.announcements[0].title, "Water maintenance")
+
 
 if __name__ == "__main__":
     unittest.main()
