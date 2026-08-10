@@ -152,6 +152,30 @@ class SimulationModelTests(unittest.TestCase):
         self.assertEqual(summary.action_items.count("overdue_payment"), 3)
         self.assertEqual(len(history), 3)
 
+    def test_announcement_and_delivery_history_rebuilds_state(self) -> None:
+        environment = notification_fatigue_environment()
+        now = datetime(2026, 1, 6, tzinfo=timezone.utc)
+        environment.publish_announcement(
+            "announcement-1",
+            "Water maintenance",
+            "Water will be unavailable.",
+            "normal",
+            now,
+            published_by="manager-1",
+        )
+        environment.record_delivery(
+            "delivery-1",
+            "unit-101",
+            "Small package",
+            now,
+            recorded_by="manager-1",
+        )
+
+        rebuilt = environment.from_history(notification_fatigue_environment(), environment.events)
+
+        self.assertEqual([item.announcement_id for item in rebuilt.announcements], ["announcement-1"])
+        self.assertEqual(rebuilt.deliveries["delivery-1"].description, "Small package")
+
 
 if __name__ == "__main__":
     unittest.main()
