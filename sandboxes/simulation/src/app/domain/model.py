@@ -283,6 +283,8 @@ class Environment:
         if new_unit_id not in self.units:
             raise KeyError(f"unknown unit: {new_unit_id}")
         old_unit_id = self.unit_for_resident(resident_id, at)
+        if old_unit_id == new_unit_id:
+            raise ValueError("resident is already assigned to that unit")
         self.record(
             "resident_moved",
             at,
