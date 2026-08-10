@@ -121,6 +121,18 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(moved[0].payload["action_items"], ["overdue_payment"])
         self.assertEqual(moved[0].payload["historical_request_ids"], ["request-1"])
 
+    def test_runtime_adapter_emits_departure_history(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+        departure = [
+            observation
+            for observation in result.observations.observations
+            if observation.name == "resident_departure_history_ready"
+        ]
+
+        self.assertEqual(len(departure), 1)
+        self.assertFalse(departure[0].payload["current_access"])
+        self.assertIn("request-1", departure[0].payload["history_subject_ids"])
+
     def test_runtime_adapter_emits_shared_unit_status_notifications(self) -> None:
         result = SimulationRunner().run(create_simulation())
 

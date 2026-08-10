@@ -15,6 +15,7 @@ QUEUE_REVIEW = datetime(2026, 2, 8, tzinfo=timezone.utc)
 SUMMARY_AT = datetime(2026, 1, 6, 1, 0, tzinfo=timezone.utc)
 ANNOUNCEMENT_EXPIRATION_CHECK = datetime(2026, 1, 8, 1, 0, tzinfo=timezone.utc)
 RESIDENT_MOVE = datetime(2026, 1, 10, tzinfo=timezone.utc)
+RESIDENT_DEPARTURE = datetime(2026, 2, 10, tzinfo=timezone.utc)
 
 
 def _run_slice(context: object) -> None:
@@ -323,6 +324,39 @@ def _resident_moves_unit(context: object) -> None:
         correlation_id="resident-1-move",
         payload={"from_unit_id": "unit-101", "to_unit_id": "unit-102"},
     )
+
+
+def _resident_leaves_condominium(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    context.emit(
+        "intention",
+        "leave_condominium",
+        source="ResidentActor",
+        actor="resident-1",
+        correlation_id="resident-1-departure",
+        payload={"resident_id": "resident-1"},
+    )
+    environment.leave_resident("resident-1", RESIDENT_DEPARTURE)
+    context.emit(
+        "domain_event",
+        "resident_membership_closed",
+        source="MembershipAggregate",
+        actor="resident-1",
+        correlation_id="resident-1-departure",
+        payload={"resident_id": "resident-1"},
+    )
+    history = environment.activity_history("resident-1", RESIDENT_DEPARTURE)
+    context.emit(
+        "projection",
+        "resident_departure_history_ready",
+        source="ActivityHistoryProjection",
+        actor="resident-1",
+        correlation_id="resident-1-departure",
+        payload={
+            "current_access": "resident-1" in environment.residents,
+            "history_subject_ids": list(dict.fromkeys(activity.subject_id for activity in history)),
+        },
+    )
     environment.move_resident("resident-1", "unit-102", RESIDENT_MOVE)
     context.emit(
         "domain_event",
@@ -506,6 +540,13 @@ def create_simulation() -> Scenario:
                 name="resident_moves_unit",
                 source="VilaSimulation",
                 correlation_id="resident-1-move",
+            ),
+            InitialScheduledAction(
+                when=RESIDENT_DEPARTURE,
+                action=_resident_leaves_condominium,
+                name="resident_leaves_condominium",
+                source="VilaSimulation",
+                correlation_id="resident-1-departure",
             ),
             InitialScheduledAction(
                 when=PAYMENT_CONFIRMATION,
