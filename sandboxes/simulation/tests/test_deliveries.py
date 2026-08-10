@@ -27,6 +27,14 @@ class DeliveryTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             environment.collect_delivery("delivery-2", "resident-1", NOW)
 
+    def test_any_building_manager_can_collect_a_delivery(self) -> None:
+        environment, _ = run_delivery_slice()
+        environment.roles["manager-2"] = "building_manager"
+
+        environment.collect_delivery("delivery-2", "manager-2", NOW)
+
+        self.assertEqual(environment.deliveries["delivery-2"].status, "collected")
+
     def test_duplicate_delivery_id_cannot_overwrite_history(self) -> None:
         environment, _ = run_delivery_slice()
 
