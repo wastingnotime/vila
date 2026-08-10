@@ -69,6 +69,14 @@ class MembershipHistoryTests(unittest.TestCase):
         self.assertEqual(environment.events, [])
         self.assertEqual(len(environment.membership_history), 4)
 
+    def test_move_to_unknown_unit_is_rejected_as_domain_error(self) -> None:
+        environment = notification_fatigue_environment()
+
+        with self.assertRaises(ValueError):
+            environment.move_resident("resident-1", "unit-999", MOVE_AT)
+
+        self.assertEqual(environment.events, [])
+
 
 if __name__ == "__main__":
     unittest.main()
