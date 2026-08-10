@@ -432,6 +432,8 @@ class Environment:
 
     def collect_delivery(self, delivery_id: str, viewer_id: str, at: datetime) -> None:
         delivery = self.deliveries[delivery_id]
+        if at.astimezone(timezone.utc) < delivery.received_at:
+            raise ValueError("delivery cannot be collected before it is received")
         if not self._is_manager(viewer_id):
             self.require_resident(viewer_id)
             if self.unit_for_resident(viewer_id, at) != delivery.unit_id:
