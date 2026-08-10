@@ -87,6 +87,12 @@ class DeliveryTests(unittest.TestCase):
 
         self.assertNotIn("empty-description", environment.deliveries)
 
+    def test_unknown_delivery_reference_is_rejected_as_domain_error(self) -> None:
+        environment, _ = run_delivery_slice()
+
+        with self.assertRaises(ValueError):
+            environment.collect_delivery("missing-delivery", "resident-1", NOW)
+
 
 if __name__ == "__main__":
     unittest.main()
