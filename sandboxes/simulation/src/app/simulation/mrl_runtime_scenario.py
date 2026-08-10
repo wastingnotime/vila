@@ -323,7 +323,7 @@ def _resident_moves_unit(context: object) -> None:
         source="ResidentActor",
         actor="resident-1",
         correlation_id="resident-1-move",
-        payload={"from_unit_id": "unit-101", "to_unit_id": "unit-102"},
+        payload={"resident_id": "resident-1", "from_unit_id": "unit-101", "to_unit_id": "unit-102"},
     )
     environment.move_resident("resident-1", "unit-102", RESIDENT_MOVE)
     context.emit(
@@ -332,7 +332,7 @@ def _resident_moves_unit(context: object) -> None:
         source="MembershipAggregate",
         actor="resident-1",
         correlation_id="resident-1-move",
-        payload={"from_unit_id": "unit-101", "to_unit_id": "unit-102"},
+        payload={"resident_id": "resident-1", "from_unit_id": "unit-101", "to_unit_id": "unit-102"},
     )
     summary = environment.status_summary("resident-1", RESIDENT_MOVE)
     context.emit(
@@ -393,7 +393,7 @@ def _resident_rejoins_condominium(context: object) -> None:
         source="ResidentActor",
         actor="resident-1",
         correlation_id="resident-1-rejoin",
-        payload={"unit_id": "unit-103"},
+        payload={"resident_id": "resident-1", "unit_id": "unit-103"},
     )
     environment.rejoin_resident("resident-1", "unit-103", RESIDENT_REJOIN)
     context.emit(
@@ -402,7 +402,7 @@ def _resident_rejoins_condominium(context: object) -> None:
         source="MembershipAggregate",
         actor="resident-1",
         correlation_id="resident-1-rejoin",
-        payload={"unit_id": "unit-103"},
+        payload={"resident_id": "resident-1", "unit_id": "unit-103"},
     )
     summary = environment.status_summary("resident-1", RESIDENT_REJOIN)
     context.emit(
