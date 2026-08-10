@@ -380,8 +380,7 @@ class Environment:
         if invitation_id not in self.invitations:
             raise ValueError(f"unknown invitation: {invitation_id}")
         invitation = self.invitations[invitation_id]
-        if invitation.resident_id != resident_id:
-            raise PermissionError("invitation belongs to another resident")
+        self._require_invitation_recipient(invitation, resident_id)
         if invitation.status != "pending":
             raise ValueError("invitation is no longer pending")
         accepted_at = at.astimezone(timezone.utc)
@@ -398,8 +397,7 @@ class Environment:
         if invitation_id not in self.invitations:
             raise ValueError(f"unknown invitation: {invitation_id}")
         invitation = self.invitations[invitation_id]
-        if invitation.resident_id != resident_id:
-            raise PermissionError("invitation belongs to another resident")
+        self._require_invitation_recipient(invitation, resident_id)
         if invitation.status != "pending":
             raise ValueError("invitation is no longer pending")
         self.record(
@@ -408,6 +406,10 @@ class Environment:
             invitation_id=invitation_id,
             resident_id=resident_id,
         )
+
+    def _require_invitation_recipient(self, invitation: Invitation, resident_id: str) -> None:
+        if invitation.resident_id != resident_id:
+            raise PermissionError("invitation belongs to another resident")
 
     def _is_manager(self, viewer_id: str) -> bool:
         return self.roles.get(viewer_id) == "building_manager"
