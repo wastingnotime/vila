@@ -576,6 +576,8 @@ class Environment:
         return notifications
 
     def maintenance_status_notifications(self, request_id: str, now: datetime) -> list[Notification]:
+        if request_id not in self.requests:
+            raise ValueError(f"unknown maintenance request: {request_id}")
         request = self.requests[request_id]
         if request.created_at is not None and request.created_at > now.astimezone(timezone.utc):
             return []
