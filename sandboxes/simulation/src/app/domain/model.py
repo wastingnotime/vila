@@ -387,6 +387,21 @@ class Environment:
             return
         raise ValueError("resident already has an active membership")
 
+    def reject_invitation(self, invitation_id: str, resident_id: str, at: datetime) -> None:
+        if invitation_id not in self.invitations:
+            raise ValueError(f"unknown invitation: {invitation_id}")
+        invitation = self.invitations[invitation_id]
+        if invitation.resident_id != resident_id:
+            raise PermissionError("invitation belongs to another resident")
+        if invitation.status != "pending":
+            raise ValueError("invitation is no longer pending")
+        self.record(
+            "invitation_rejected",
+            at.astimezone(timezone.utc),
+            invitation_id=invitation_id,
+            resident_id=resident_id,
+        )
+
     def _is_manager(self, viewer_id: str) -> bool:
         return self.roles.get(viewer_id) == "building_manager"
 
