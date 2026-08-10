@@ -93,6 +93,16 @@ class DeliveryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             environment.collect_delivery("missing-delivery", "resident-1", NOW)
 
+    def test_delivery_rejects_unknown_unit_as_domain_error(self) -> None:
+        environment, _ = run_delivery_slice()
+
+        with self.assertRaises(ValueError):
+            environment.record_delivery(
+                "unknown-unit", "unit-999", "Package", NOW, recorded_by="manager-1"
+            )
+
+        self.assertNotIn("unknown-unit", environment.deliveries)
+
 
 if __name__ == "__main__":
     unittest.main()
