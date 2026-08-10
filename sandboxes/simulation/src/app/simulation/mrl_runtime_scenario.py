@@ -23,6 +23,7 @@ RESIDENT_MOVE = datetime(2026, 1, 10, tzinfo=timezone.utc)
 RESIDENT_DEPARTURE = datetime(2026, 2, 10, tzinfo=timezone.utc)
 RESIDENT_REJOIN = datetime(2026, 2, 12, tzinfo=timezone.utc)
 ONBOARDING_ACCEPT = datetime(2026, 1, 2, tzinfo=timezone.utc)
+ONBOARDING_REJECTION = datetime(2026, 1, 3, tzinfo=timezone.utc)
 
 
 def _run_slice(context: object) -> None:
@@ -501,6 +502,55 @@ def _onboard_new_resident(context: object) -> None:
     )
 
 
+def _reject_new_resident_onboarding(context: object) -> None:
+    environment: Environment = context.environment  # type: ignore[attr-defined]
+    context.emit(
+        "intention",
+        "invite_resident",
+        source="ManagerActor",
+        actor="manager-1",
+        correlation_id="invite-declined",
+        payload={"resident_id": "resident-declined", "unit_id": "unit-102"},
+    )
+    environment.invite_resident(
+        "invite-declined",
+        "resident-declined",
+        "unit-102",
+        ONBOARDING_REJECTION,
+        ONBOARDING_REJECTION.replace(day=10),
+        invited_by="manager-1",
+    )
+    context.emit(
+        "intention",
+        "reject_invitation",
+        source="ResidentActor",
+        actor="resident-declined",
+        correlation_id="invite-declined",
+        payload={"invitation_id": "invite-declined"},
+    )
+    environment.reject_invitation("invite-declined", "resident-declined", ONBOARDING_REJECTION)
+    context.emit(
+        "domain_event",
+        "invitation_rejected",
+        source="MembershipAggregate",
+        actor="resident-declined",
+        correlation_id="invite-declined",
+        payload={"resident_id": "resident-declined"},
+    )
+    context.emit(
+        "projection",
+        "resident_onboarding_rejected",
+        source="MembershipProjection",
+        actor="resident-declined",
+        correlation_id="invite-declined",
+        payload={
+            "invitation_id": "invite-declined",
+            "status": environment.invitations["invite-declined"].status,
+            "current_access": environment.has_current_access("resident-declined", ONBOARDING_REJECTION),
+        },
+    )
+
+
 def _run_queue_observation(context: object) -> None:
     environment: Environment = context.environment  # type: ignore[attr-defined]
     arrival = datetime(2026, 2, 6, tzinfo=timezone.utc)
@@ -615,6 +665,13 @@ def create_simulation() -> Scenario:
                 name="onboard_new_resident",
                 source="VilaSimulation",
                 correlation_id="invite-new-resident",
+            ),
+            InitialScheduledAction(
+                when=ONBOARDING_REJECTION,
+                action=_reject_new_resident_onboarding,
+                name="reject_new_resident_onboarding",
+                source="VilaSimulation",
+                correlation_id="invite-declined",
             ),
             InitialScheduledAction(
                 when=SUMMARY_AT,

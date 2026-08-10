@@ -59,6 +59,21 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertEqual(ready[0].actor, "resident-new")
         self.assertEqual(ready[0].payload, {"unit_id": "unit-103", "current_access": True})
 
+    def test_runtime_adapter_emits_onboarding_rejection_evidence(self) -> None:
+        result = SimulationRunner().run(create_simulation())
+        rejected = [
+            observation
+            for observation in result.observations.observations
+            if observation.name == "resident_onboarding_rejected"
+        ]
+
+        self.assertEqual(len(rejected), 1)
+        self.assertEqual(rejected[0].actor, "resident-declined")
+        self.assertEqual(
+            rejected[0].payload,
+            {"invitation_id": "invite-declined", "status": "rejected", "current_access": False},
+        )
+
     def test_runtime_adapter_emits_queue_projection_from_shared_environment(self) -> None:
         result = SimulationRunner().run(create_simulation())
 
