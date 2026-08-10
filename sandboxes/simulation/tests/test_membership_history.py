@@ -42,6 +42,24 @@ class MembershipHistoryTests(unittest.TestCase):
         self.assertNotIn("resident-1", environment.residents)
         self.assertEqual(environment.membership_history[0].active_until, MOVE_AT)
 
+    def test_membership_lifecycle_is_replayable(self) -> None:
+        environment = notification_fatigue_environment()
+        leave_at = datetime(2026, 2, 10, tzinfo=timezone.utc)
+        rejoin_at = datetime(2026, 2, 12, tzinfo=timezone.utc)
+
+        environment.move_resident("resident-1", "unit-102", MOVE_AT)
+        environment.leave_resident("resident-1", leave_at)
+        environment.rejoin_resident("resident-1", "unit-103", rejoin_at)
+
+        replayed = environment.from_history(notification_fatigue_environment(), environment.events)
+
+        self.assertEqual(
+            [event.name for event in environment.events],
+            ["resident_moved", "resident_departed", "resident_rejoined"],
+        )
+        self.assertEqual(replayed.unit_for_resident("resident-1", rejoin_at), "unit-103")
+        self.assertEqual(replayed.membership_history, environment.membership_history)
+
 
 if __name__ == "__main__":
     unittest.main()
