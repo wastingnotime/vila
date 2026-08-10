@@ -200,15 +200,7 @@ class Environment:
             invitation = self.invitations[event.payload["invitation_id"]]
             invitation.status = "accepted"
             invitation.accepted_at = event.at
-            self.membership_history.append(
-                MembershipPeriod(
-                    resident_id=invitation.resident_id,
-                    unit_id=invitation.unit_id,
-                    active_from=event.at,
-                )
-            )
-            self.memberships[invitation.resident_id] = invitation.unit_id
-            self.residents.add(invitation.resident_id)
+            self._activate_invitation(invitation, event.at)
         elif event.name == "invitation_rejected":
             invitation = self.invitations[event.payload["invitation_id"]]
             invitation.status = "rejected"
@@ -410,6 +402,17 @@ class Environment:
     def _require_invitation_recipient(self, invitation: Invitation, resident_id: str) -> None:
         if invitation.resident_id != resident_id:
             raise PermissionError("invitation belongs to another resident")
+
+    def _activate_invitation(self, invitation: Invitation, at: datetime) -> None:
+        self.membership_history.append(
+            MembershipPeriod(
+                resident_id=invitation.resident_id,
+                unit_id=invitation.unit_id,
+                active_from=at,
+            )
+        )
+        self.memberships[invitation.resident_id] = invitation.unit_id
+        self.residents.add(invitation.resident_id)
 
     def _is_manager(self, viewer_id: str) -> bool:
         return self.roles.get(viewer_id) == "building_manager"
