@@ -24,6 +24,8 @@ class RuntimeScenarioTests(unittest.TestCase):
                 "payment-flow",
                 "announcement-flow",
                 "onboarding-flow",
+                "status-flow",
+                "activity-flow",
                 "resident-notifications",
                 "activity-history",
             },
@@ -42,7 +44,7 @@ class RuntimeScenarioTests(unittest.TestCase):
         self.assertIsNone(nodes["status-summary"].domain)
         self.assertEqual(
             {node.domain for node in nodes.values() if node.domain},
-            {"maintenance", "delivery", "payment", "announcement", "onboarding"},
+            {"maintenance", "delivery", "payment", "announcement", "onboarding", "status", "activity"},
         )
         self.assertTrue(all(edge.from_node in nodes and edge.to_node in nodes for edge in scenario.observatory_edges))
         self.assertTrue(
@@ -197,7 +199,7 @@ class RuntimeScenarioTests(unittest.TestCase):
                 "action_items": [],
                 "latest_update": None,
                 "open_delivery_ids": [],
-                "use_case_id": "status-summary",
+                "use_case_id": "status-flow",
             },
         )
 

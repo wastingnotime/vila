@@ -43,7 +43,9 @@ def _observatory_target(name: str) -> str:
     if "maintenance" in normalized or "attention_queue" in normalized:
         return "maintenance-queue"
     if "activity" in normalized or "departure_history" in normalized:
-        return "activity-history"
+        return "activity-flow"
+    if "status" in normalized or "summary" in normalized:
+        return "status-flow"
     return "status-summary"
 
 
@@ -811,6 +813,8 @@ def create_simulation() -> Scenario:
             ObservatoryNode("payment-flow", "Payment flow", "use_case", "use_cases", domain="payment"),
             ObservatoryNode("announcement-flow", "Announcement flow", "use_case", "use_cases", domain="announcement"),
             ObservatoryNode("onboarding-flow", "Onboarding flow", "use_case", "use_cases", domain="onboarding"),
+            ObservatoryNode("status-flow", "Status flow", "use_case", "use_cases", domain="status"),
+            ObservatoryNode("activity-flow", "Activity flow", "use_case", "use_cases", domain="activity"),
             ObservatoryNode("resident-notifications", "Resident notifications", "notification", "events"),
             ObservatoryNode("activity-history", "Activity history", "projection", "projections"),
         ],
@@ -820,8 +824,12 @@ def create_simulation() -> Scenario:
             ObservatoryEdge("manager-1", "payment-flow", "confirms"),
             ObservatoryEdge("manager-1", "announcement-flow", "publishes"),
             ObservatoryEdge("resident-1", "delivery-flow", "collects"),
+            ObservatoryEdge("resident-1", "status-flow", "reviews"),
+            ObservatoryEdge("manager-1", "status-flow", "reviews"),
             ObservatoryEdge("maintenance-queue", "resident-notifications", "notifies"),
             ObservatoryEdge("payment-flow", "activity-history", "records"),
+            ObservatoryEdge("activity-flow", "activity-history", "records"),
+            ObservatoryEdge("status-flow", "status-summary", "projects"),
             ObservatoryEdge("delivery-flow", "status-summary", "updates"),
             ObservatoryEdge("announcement-flow", "status-summary", "updates"),
             ObservatoryEdge("manager-1", "onboarding-flow", "invites"),
