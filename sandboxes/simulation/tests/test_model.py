@@ -135,6 +135,15 @@ class SimulationModelTests(unittest.TestCase):
 
         self.assertEqual(environment.events, [])
 
+    def test_record_requires_an_event_name(self) -> None:
+        environment = seeded_environment()
+        now = datetime(2026, 1, 6, tzinfo=timezone.utc)
+
+        with self.assertRaises(ValueError):
+            environment.record(" ", now)
+
+        self.assertEqual(environment.events, [])
+
     def test_event_history_rebuilds_the_same_projection(self) -> None:
         environment = seeded_environment()
         now = datetime(2026, 1, 6, tzinfo=timezone.utc)
