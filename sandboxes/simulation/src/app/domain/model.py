@@ -191,6 +191,10 @@ class Environment:
                 description=event.payload["description"],
                 received_at=event.at,
             )
+        elif event.name == "delivery_collected":
+            delivery = self.deliveries[event.payload["delivery_id"]]
+            delivery.status = "collected"
+            delivery.collected_at = event.at
 
     def _close_membership(self, resident_id: str, unit_id: str, at: datetime) -> None:
         for index, membership in enumerate(self.membership_history):
@@ -463,8 +467,7 @@ class Environment:
                 raise PermissionError("resident cannot collect another unit's delivery")
         if delivery.status != "waiting":
             raise ValueError("delivery is already collected")
-        delivery.status = "collected"
-        delivery.collected_at = at.astimezone(timezone.utc)
+        self.record("delivery_collected", at, delivery_id=delivery_id, collected_by=viewer_id)
 
     def activity_history(self, viewer_id: str, now: datetime) -> list[ActivityItem]:
         """Build a small user-facing history, not a raw technical event log."""
