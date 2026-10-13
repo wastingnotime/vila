@@ -1,5 +1,8 @@
 # Condominium simulation
 
+Historical reference: Vila was retired on 2026-10-13. See the
+[retirement record](https://github.com/wastingnotime/vila/blob/main/docs/decommission.md).
+
 This is the pre-implementation model lab for Vila. It explores how a small
 condominium behaves over simulated time before any production API or web
 application is built.
